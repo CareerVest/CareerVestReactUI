@@ -1,0 +1,43 @@
+# Node.js dependencies for both frontend and backend
+node_modules/
+
+# Build output for both frontend and backend
+build/
+dist/
+
+# Next.js build folder
+.next/
+
+# Logs
+logs/
+*.log
+
+# Environment files
+.env
+
+# macOS system files
+.DS_Store
+
+# IDE files (e.g., Visual Studio Code or JetBrains)
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+
+# Assembly and binary files (compiled output)
+*.o
+*.out
+*.exe
+*.dll
+*.so
+*.a
+*.lib
+*.class
+*.pyc
+
+# Frontend-specific (React, Next.js, etc.)
+frontend/build/
+
+# Backend-specific (e.g., compiled Node.js files or Python bytecode)
+backend/dist/
