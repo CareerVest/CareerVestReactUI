@@ -181,6 +181,7 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+<<<<<<< HEAD
 // ✅ Apply Pending Migrations
 using (var scope = app.Services.CreateScope())
 {
@@ -221,10 +222,53 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
+=======
+// Configure the HTTP request pipeline.
+>>>>>>> 42efccf (backend folder commit)
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
+<<<<<<< HEAD
 app.Run();
+=======
+// Apply CORS policy
+app.UseCors("AllowFrontend");
+
+// Enable authentication and authorization middleware
+app.UseAuthentication();
+app.UseAuthorization();
+
+// Enable HTTPS Redirection (optional)
+app.UseHttpsRedirection();
+
+// WeatherForecast endpoint
+var summaries = new[] { "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching" };
+
+app.MapGet("/weatherforecast", [Authorize] (HttpContext httpContext) =>
+{
+    // Log the JWT token (for debugging)
+    var token = httpContext.Request.Headers["Authorization"].ToString();
+    Console.WriteLine("Received token: " + token);
+
+    var summaries = new[] { "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching" };
+    var forecast = Enumerable.Range(1, 5).Select(index =>
+        new WeatherForecast(DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
+                            Random.Shared.Next(-20, 55),
+                            summaries[Random.Shared.Next(summaries.Length)]))
+        .ToArray();
+    return forecast;
+})
+.WithName("GetWeatherForecast")
+.WithOpenApi();
+
+app.Run();
+
+// WeatherForecast record for the API
+record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
+{
+    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+}
+>>>>>>> 42efccf (backend folder commit)
