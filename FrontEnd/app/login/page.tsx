@@ -13,9 +13,10 @@ export default function LoginPage() {
   const { login, isAuthenticated, isInitialized } = useAuth()
 
   useEffect(() => {
-    // Check if the user is authenticated and redirect to dashboard
+    console.log("Login page: isAuthenticated =", isAuthenticated) // Debugging
     if (isAuthenticated) {
-      router.push("/")  // Redirect to the dashboard
+      console.log("Redirecting to dashboard from login page") // Debugging
+      router.push("/")
     }
   }, [isAuthenticated, router])
 
@@ -30,8 +31,9 @@ export default function LoginPage() {
     try {
       const loginSuccess = await login()
       if (loginSuccess) {
-        console.log("Login successful")
-        router.push("/")  // Redirect to dashboard after successful login
+        console.log("Login successful, setting localStorage") // Debugging
+        localStorage.setItem("isAuthenticated", "true") // Set authentication in localStorage
+        router.push("/") // Redirect to dashboard after successful login
       }
     } catch (error) {
       setError("Login failed. Please try again.")
@@ -54,7 +56,10 @@ export default function LoginPage() {
   return (
     <Container component="main" maxWidth="xs">
       <Box sx={{ marginTop: 8, display: "flex", flexDirection: "column", alignItems: "center" }}>
-        <Paper elevation={3} sx={{ p: 4, display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+        <Paper
+          elevation={3}
+          sx={{ p: 4, display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}
+        >
           <Typography component="h1" variant="h5" sx={{ mb: 3 }}>
             Sign in to CareerVest
           </Typography>
@@ -79,3 +84,4 @@ export default function LoginPage() {
     </Container>
   )
 }
+
