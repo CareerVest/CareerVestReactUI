@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Box,
   Drawer,
@@ -28,6 +28,7 @@ import {
 import { BarChartIcon as OrganizationChart, DollarSign } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
+import { useAuth } from "../../contexts/AuthContext"
 
 const menuItems = [
   { title: "Dashboard", icon: <Speed />, path: "/" },
@@ -44,15 +45,38 @@ export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
+  const { user, logout, isAuthenticated } = useAuth()
+  const [mounted, setMounted] = useState(false)
+  const [userData, setUserData] = useState<any>(null)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (user) {
+      setUserData(user)
+    } else {
+      const storedUser = JSON.parse(localStorage.getItem("user") || "null")
+      if (storedUser) {
+        setUserData(storedUser)
+      }
+    }
+  }, [user])
 
   const handleLogout = () => {
-    localStorage.removeItem("isAuthenticated")
+    logout()
     router.push("/login")
+  }
+
+  if (!mounted) {
+    return null
   }
 
   return (
     <Drawer
       variant="permanent"
+      open={!isCollapsed}
       sx={{
         width: isCollapsed ? 80 : 280,
         flexShrink: 0,
@@ -63,9 +87,9 @@ export default function Sidebar() {
           transition: "width 0.3s ease",
           backgroundColor: "#682A53",
           color: "white",
-          position: "fixed",
-          height: "100vh",
           overflowX: "hidden",
+          display: "flex",
+          flexDirection: "column",
         },
       }}
     >
@@ -82,14 +106,14 @@ export default function Sidebar() {
 
       <Box sx={{ px: 2, py: 3 }}>
         <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
-          <Avatar sx={{ width: 40, height: 40, mr: isCollapsed ? 0 : 2 }} />
-          {!isCollapsed && (
+          <Avatar sx={{ width: 40, height: 40, mr: isCollapsed ? 0 : 2 }} src={user?.photoURL} />
+          {!isCollapsed && userData && (
             <Box>
               <Typography variant="subtitle1" noWrap sx={{ color: "white" }}>
-                Admin User
+                {userData.name || "User"}
               </Typography>
               <Typography variant="body2" sx={{ color: "rgba(255, 255, 255, 0.7)" }} noWrap>
-                admin@careervest.com
+                {userData.email || userData.username || "No email"}
               </Typography>
             </Box>
           )}
@@ -134,7 +158,7 @@ export default function Sidebar() {
             </Tooltip>
           </ListItem>
         ))}
-        <ListItem disablePadding>
+        <ListItem disablePadding sx={{ mt: "auto" }}>
           <Tooltip title={isCollapsed ? "Logout" : ""} placement="right">
             <ListItemButton
               onClick={handleLogout}
