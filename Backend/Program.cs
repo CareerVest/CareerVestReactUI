@@ -1,69 +1,116 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Identity.Web;
-using Microsoft.AspNetCore.Authorization;
+using Microsoft.OpenApi.Models;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.HttpsPolicy;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// ✅ Configure HTTPS Redirection Options
+builder.Services.AddHttpsRedirection(options =>
+{
+    options.HttpsPort = 7070; // Ensure this matches launchSettings.json
+});
+
+// ✅ Add environment-specific configuration
+builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                      .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
+                      .AddEnvironmentVariables();
+
+// ✅ Add DbContext with connection string
+builder.Services.AddDbContext<Backend.Data.ApplicationDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// ✅ Add services to the container
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+        {
+            options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+            options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.Never;
+        });
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
-// Add Microsoft Identity Web API Authentication for JWT tokens
+// ✅ Swagger configuration with JWT Bearer token support
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo { Title = "CareerVest API", Version = "v1" });
+
+    // Add JWT Bearer authentication to Swagger UI
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Enter 'Bearer' followed by your token. Example: Bearer {token}"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {}
+        }
+    });
+});
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
+    .AddJwtBearer(options =>
+    {
+        options.Authority = "https://login.microsoftonline.com/afd6b282-b8b0-4dbb-9985-f5c3249623f9/v2.0";
+        options.Audience = "api://3b5b4b15-81ff-4c83-a9fd-569dc8fdf282"; // Explicit Audience
 
-// Enable CORS for frontend requests
+        options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuers = new[]
+            {
+                "https://login.microsoftonline.com/afd6b282-b8b0-4dbb-9985-f5c3249623f9/v2.0",
+                "https://sts.windows.net/afd6b282-b8b0-4dbb-9985-f5c3249623f9/"
+            },
+            ValidateAudience = true,
+            ValidAudience = "api://3b5b4b15-81ff-4c83-a9fd-569dc8fdf282",
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true
+        };
+    });
+
+// ✅ Enable CORS for frontend requests
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend",
-        builder => builder.WithOrigins("http://localhost:3000")  // Your frontend URL
-                          .AllowAnyMethod()
-                          .AllowAnyHeader());
+        policy => policy.WithOrigins("http://localhost:3000")
+                        .AllowAnyMethod()
+                        .AllowAnyHeader());
 });
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// ✅ Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "CareerVest API V1");
+        c.RoutePrefix = string.Empty; // ✅ Makes Swagger UI accessible at https://localhost:7070/index.html
+    });
 }
 
-// Apply CORS policy
+// ✅ Middleware
+app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
-
-// Enable authentication and authorization middleware
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Enable HTTPS Redirection (optional)
-app.UseHttpsRedirection();
-
-// WeatherForecast endpoint
-var summaries = new[] { "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching" };
-
-app.MapGet("/weatherforecast", [Authorize] (HttpContext httpContext) =>
-{
-    // Log the JWT token (for debugging)
-    var token = httpContext.Request.Headers["Authorization"].ToString();
-    Console.WriteLine("Received token: " + token);
-
-    var summaries = new[] { "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching" };
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast(DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                            Random.Shared.Next(-20, 55),
-                            summaries[Random.Shared.Next(summaries.Length)]))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast")
-.WithOpenApi();
+app.MapControllers();
 
 app.Run();
-
-// WeatherForecast record for the API
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
