@@ -3,18 +3,17 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Box, Button, Container, Typography, Paper, CircularProgress } from "@mui/material";
-import { useAuth } from "../../hooks/useAuth";
+import { useAuth } from "@/contexts/authContext";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const { login, isAuthenticated, isInitialized } = useAuth();
+  const { login, isAuthenticated, isInitialized } = useAuth(); // ✅ Moved useAuth call here, inside the component
 
   useEffect(() => {
-    // Wait until auth is initialized before redirecting
     if (isInitialized && isAuthenticated) {
-      router.replace("/"); // ✅ Use replace() to prevent back-navigation loop
+      router.replace("/"); // ✅ Redirect only after authentication is confirmed
     }
   }, [isAuthenticated, isInitialized, router]);
 
@@ -26,21 +25,27 @@ export default function LoginPage() {
 
     setIsLoading(true);
     setError(null);
+
     try {
-      const loginSuccess = await login();
+      console.log("🟢 Attempting Microsoft login via popup...");
+
+      // Use the auth context directly (already available from component scope)
+      const loginSuccess = await login(); // Calls MSAL Popup Login
       if (loginSuccess) {
-        localStorage.setItem("isAuthenticated", "true");
-        router.replace("/"); // ✅ Prevent back-navigation loop
+        console.log("✅ Microsoft Login Successful!");
+        router.replace("/"); // Prevent back-navigation loop
+      } else {
+        console.error("❌ Login failed or canceled.");
       }
     } catch (error) {
       setError("Login failed. Please try again.");
-      console.error("Login failed:", error);
+      console.error("❌ Login Error:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Prevent rendering until auth is initialized
+  // Prevent rendering until authentication is initialized
   if (!isInitialized) {
     return (
       <Container component="main" maxWidth="xs">

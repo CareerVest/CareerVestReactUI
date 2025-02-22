@@ -22,17 +22,17 @@ import {
   Delete as DeleteIcon,
 } from "@mui/icons-material";
 import { useRouter } from "next/navigation";
-import type { Client } from "@/app/types/client";
+import type { ClientList } from "@/app/types/Clients/ClientList";
 
 interface ClientListProps {
-  clients: Client[];
+  clients: ClientList[];
 }
 
-const dummyRecruiters = {
-  1: "Sarah Thompson",
-  2: "Michael Brown",
-  3: "Emily Davis",
-};
+// const dummyRecruiters = {
+//   1: "Sarah Thompson",
+//   2: "Michael Brown",
+//   3: "Emily Davis",
+// };
 
 export default function ClientList({ clients }: ClientListProps) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -63,14 +63,20 @@ export default function ClientList({ clients }: ClientListProps) {
 
   const handleDelete = useCallback((id: number) => {
     if (confirm("Are you sure you want to delete this client?")) {
-      console.log(`Client with ID ${id} deleted.`);
     }
   }, []);
 
-  const formatDate = useCallback((dateString: string | null | undefined) => {
-    if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString();
-  }, []);
+  const formatDate = (date: string | Date | null) => {
+    if (!date) return "N/A"; // Handle null or undefined
+    const parsedDate = date instanceof Date ? date : new Date(date); // Ensure it's a Date object
+    if (isNaN(parsedDate.getTime())) return "N/A"; // Handle invalid dates
+    const month = parsedDate.getMonth() + 1; // Months are zero-based
+    const day = parsedDate.getDate();
+    const year = parsedDate.getFullYear();
+    return `${month.toString().padStart(2, "0")}/${day
+      .toString()
+      .padStart(2, "0")}/${year}`;
+  };
 
   const columns: GridColDef[] = useMemo(
     () => [
@@ -85,9 +91,8 @@ export default function ClientList({ clients }: ClientListProps) {
         headerName: "Enrolled Date",
         flex: 1,
         minWidth: 120,
-        valueGetter: (params: GridRenderCellParams<any, Client>) => {
-          if (!params || !params.row) return "N/A"; // ✅ Full null safety check
-          return formatDate(params.row.enrollmentDate || null);
+        valueGetter: (params) => {
+          return formatDate(params);
         },
       },
       {
@@ -95,20 +100,30 @@ export default function ClientList({ clients }: ClientListProps) {
         headerName: "Tech Stack",
         flex: 1,
         minWidth: 150,
+        valueGetter: (params: GridRenderCellParams<any, ClientList>) => {
+          if (!params) return "N/A";
+          return params;
+        },
       },
       {
-        field: "assignedRecruiterID",
+        field: "salesPerson",
+        headerName: "Sales Person",
+        flex: 1,
+        minWidth: 150,
+        valueGetter: (params: GridRenderCellParams<any, ClientList>) => {
+          if (!params) return "N/A";
+          return params;
+        },
+      },
+      {
+        field: "assignedRecruiterName",
         headerName: "Recruiter",
         flex: 1,
         minWidth: 150,
-        valueGetter: (params: GridRenderCellParams<any, Client>) => {
-          if (!params?.row) return "N/A"; // ✅ Null safety check
+        valueGetter: (params: GridRenderCellParams<any, ClientList>) => {
+          if (!params) return "N/A"; // ✅ Null safety check
 
-          const recruiterId = params.row.assignedRecruiterID;
-          return recruiterId &&
-            dummyRecruiters[recruiterId as keyof typeof dummyRecruiters]
-            ? dummyRecruiters[recruiterId as keyof typeof dummyRecruiters]
-            : "Unknown";
+          return params;
         },
       },
       {
@@ -128,22 +143,6 @@ export default function ClientList({ clients }: ClientListProps) {
             }
           />
         ),
-      },
-      {
-        field: "totalDue",
-        headerName: "Total Due",
-        flex: 1,
-        minWidth: 120,
-        valueFormatter: (params: { value: number }) =>
-          `$${params.value ? params.value.toFixed(2) : "0.00"}`,
-      },
-      {
-        field: "totalPaid",
-        headerName: "Total Paid",
-        flex: 1,
-        minWidth: 120,
-        valueFormatter: (params: { value: number }) =>
-          `$${params.value ? params.value.toFixed(2) : "0.00"}`,
       },
       {
         field: "actions",
@@ -189,9 +188,7 @@ export default function ClientList({ clients }: ClientListProps) {
     return clients.filter((client) =>
       keywords.every((keyword) =>
         Object.values(client).some(
-          (value) =>
-            value &&
-            value.toString().toLowerCase().includes(keyword)
+          (value) => value && value.toString().toLowerCase().includes(keyword)
         )
       )
     );

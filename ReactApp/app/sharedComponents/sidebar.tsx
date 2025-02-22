@@ -28,7 +28,7 @@ import {
 import { BarChartIcon as OrganizationChart, DollarSign } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { useAuth } from "../../hooks/useAuth"
+import { useAuth } from "@/contexts/authContext"
 
 const menuItems = [
   { title: "Dashboard", icon: <Speed />, path: "/" },
@@ -65,9 +65,13 @@ export default function Sidebar() {
   }, [user])
 
   const handleLogout = () => {
-    logout()
-    router.push("/login")
-  }
+    if (user) {
+      // Log out the specific active account silently without prompting
+      logout();
+      // Manually redirect to login page after logout
+      router.push("/login");
+    }
+  };
 
   if (!mounted) {
     return null
@@ -106,7 +110,7 @@ export default function Sidebar() {
 
       <Box sx={{ px: 2, py: 3 }}>
         <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
-          <Avatar sx={{ width: 40, height: 40, mr: isCollapsed ? 0 : 2 }} src={user?.photoURL} />
+          <Avatar sx={{ width: 40, height: 40, mr: isCollapsed ? 0 : 2 }} src={""} />
           {!isCollapsed && userData && (
             <Box>
               <Typography variant="subtitle1" noWrap sx={{ color: "white" }}>
@@ -188,4 +192,3 @@ export default function Sidebar() {
     </Drawer>
   )
 }
-

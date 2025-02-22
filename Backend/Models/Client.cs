@@ -113,7 +113,7 @@ namespace Backend.Models
         public decimal TotalPaid { get; set; } = 0;
 
         //Ensured Payment Schedules relationship remains intact
-        //public virtual ICollection<PaymentSchedule> PaymentSchedules { get; set; } = new List<PaymentSchedule>();
+        public virtual ICollection<PaymentSchedule> PaymentSchedules { get; set; } = new List<PaymentSchedule>();
 
         public Client()
         {
