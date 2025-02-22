@@ -7,14 +7,18 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import EditClientForm from "../../components/EditClientForm";
 import { getClient } from "../../actions/clientActions";
 import type { ClientDetail } from "../../../types/Clients/ClientDetail";
+<<<<<<< HEAD
 import { useAuth } from "@/contexts/authContext";
 import permissions from "../../../utils/permissions"; // Import centralized permissions
+=======
+>>>>>>> 3e9296e (working model fo cliets view, edit, list.)
 
 export default function ClientEdit({ params }: { params: { id: string } }) {
   const [client, setClient] = useState<ClientDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+<<<<<<< HEAD
   const { roles } = useAuth();
 
   const userRole = roles.length > 0 
@@ -28,6 +32,8 @@ export default function ClientEdit({ params }: { params: { id: string } }) {
               ? "recruiter" 
               : "default") 
     : "default";
+=======
+>>>>>>> 3e9296e (working model fo cliets view, edit, list.)
 
   useEffect(() => {
     const fetchClient = async () => {
@@ -52,6 +58,7 @@ export default function ClientEdit({ params }: { params: { id: string } }) {
     router.push("/clients");
   };
 
+<<<<<<< HEAD
   const canEdit = 
     !!permissions.clients[userRole].basicInfo.edit || 
     (typeof permissions.clients[userRole].marketingInfo.edit === "object" 
@@ -60,6 +67,8 @@ export default function ClientEdit({ params }: { params: { id: string } }) {
     !!permissions.clients[userRole].subscriptionInfo.edit ||
     !!permissions.clients[userRole].postPlacementInfo.edit;
 
+=======
+>>>>>>> 3e9296e (working model fo cliets view, edit, list.)
   if (loading) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
@@ -97,6 +106,7 @@ export default function ClientEdit({ params }: { params: { id: string } }) {
       <Button startIcon={<ArrowBackIcon />} onClick={handleBack} sx={{ mb: 2 }}>
         Back to Clients
       </Button>
+<<<<<<< HEAD
       {canEdit ? (
         <Typography variant="h4" gutterBottom>
           Edit Client: {client.clientName || "Unknown"}
@@ -107,6 +117,12 @@ export default function ClientEdit({ params }: { params: { id: string } }) {
         </Typography>
       )}
       <EditClientForm client={client} userRole={userRole} permissions={permissions.clients} canEdit={canEdit} />
+=======
+      <Typography variant="h4" gutterBottom>
+        Edit Client: {client.clientName}
+      </Typography>
+      <EditClientForm client={client} /> {/* ✅ No more error here */}
+>>>>>>> 3e9296e (working model fo cliets view, edit, list.)
     </Box>
   );
 }

@@ -9,11 +9,17 @@ using Backend.Interfaces;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
+<<<<<<< HEAD
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using Microsoft.Graph;
 using Microsoft.Identity.Client;
 using System;
+=======
+using System.Text;
+using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
+>>>>>>> 3e9296e (working model fo cliets view, edit, list.)
 
 var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
 
@@ -43,6 +49,7 @@ builder.Services.AddScoped<IClientRepository, ClientRepository>();
 builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 
+<<<<<<< HEAD
 // ✅ Register GraphServiceClient for SharePoint Integration
 builder.Services.AddScoped<GraphServiceClient>(provider =>
 {
@@ -71,6 +78,8 @@ builder.Services.AddScoped<GraphServiceClient>(provider =>
     return new GraphServiceClient(authProvider);
 });
 
+=======
+>>>>>>> 3e9296e (working model fo cliets view, edit, list.)
 // ✅ Register Services
 builder.Services.AddScoped<IClientService, ClientService>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
@@ -118,7 +127,11 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+<<<<<<< HEAD
 // ✅ Azure AD Authentication
+=======
+// ✅ Azure AD Authentication (Fixed)
+>>>>>>> 3e9296e (working model fo cliets view, edit, list.)
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 var jwtAudience = builder.Configuration["Jwt:Audience"];
 
@@ -138,9 +151,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuer = true,
             ValidIssuer = jwtIssuer,
             ValidateAudience = true,
+<<<<<<< HEAD
             ValidAudiences = new[] { jwtAudience, "api://careervest-backend" },
             ValidateLifetime = true,
             RoleClaimType = "roles"
+=======
+            ValidAudiences = new[] { jwtAudience, "api://careervest-backend" },  // 🔹 Ensure both audience values are valid
+            ValidateLifetime = true,
+            RoleClaimType = "roles"  // 🔹 Ensures roles are properly recognized
+>>>>>>> 3e9296e (working model fo cliets view, edit, list.)
         };
 
         options.Events = new JwtBearerEvents
@@ -182,6 +201,9 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 3e9296e (working model fo cliets view, edit, list.)
 // ✅ Apply Pending Migrations
 using (var scope = app.Services.CreateScope())
 {
@@ -221,6 +243,7 @@ app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+<<<<<<< HEAD
 
 =======
 // Configure the HTTP request pipeline.
@@ -272,3 +295,6 @@ record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
     public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
 }
 >>>>>>> 42efccf (backend folder commit)
+=======
+app.Run();
+>>>>>>> 3e9296e (working model fo cliets view, edit, list.)

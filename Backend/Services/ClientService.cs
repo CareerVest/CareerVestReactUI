@@ -1,13 +1,20 @@
 using Backend.Dtos;
+<<<<<<< HEAD
+=======
+using Backend.Models;
+>>>>>>> 3e9296e (working model fo cliets view, edit, list.)
 using Backend.Repositories;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
 using Backend.Data;
+<<<<<<< HEAD
 using Microsoft.Graph;
 using Backend.Models;
 using System;
 using System.Linq;
+=======
+>>>>>>> 3e9296e (working model fo cliets view, edit, list.)
 
 namespace Backend.Services
 {
@@ -15,6 +22,7 @@ namespace Backend.Services
     {
         private readonly IClientRepository _clientRepository;
         private readonly ILogger<ClientService> _logger;
+<<<<<<< HEAD
         private readonly ApplicationDbContext _context;
         private readonly GraphServiceClient _graphClient;
         private readonly IConfiguration _configuration;
@@ -25,26 +33,42 @@ namespace Backend.Services
             ApplicationDbContext context,
             GraphServiceClient graphClient,
             IConfiguration configuration)
+=======
+        private readonly ApplicationDbContext _context; // Assuming this is injected
+
+        public ClientService(IClientRepository clientRepository, ILogger<ClientService> logger, ApplicationDbContext context)
+>>>>>>> 3e9296e (working model fo cliets view, edit, list.)
         {
             _clientRepository = clientRepository;
             _logger = logger;
             _context = context;
+<<<<<<< HEAD
             _graphClient = graphClient;
             _configuration = configuration;
         }
 
+=======
+        }
+
+        /// ✅ Get Clients Based on User Role (Filters Applied in Repository)
+>>>>>>> 3e9296e (working model fo cliets view, edit, list.)
         public async Task<IEnumerable<ClientListDto>> GetClientsForUserAsync(string azureUserId, string role, int? supervisorId)
         {
             int employeeId = await MapAzureUserIdToEmployeeId(azureUserId);
             return await _clientRepository.GetAllClientsAsync(role, employeeId, supervisorId);
         }
 
+<<<<<<< HEAD
+=======
+        /// ✅ Securely Fetch a Client Based on User Role (Filters Applied in Repository)
+>>>>>>> 3e9296e (working model fo cliets view, edit, list.)
         public async Task<ClientDetailDto?> GetClientByIdForUserAsync(int clientId, string azureUserId, string role, int? supervisorId)
         {
             int employeeId = await MapAzureUserIdToEmployeeId(azureUserId);
             return await _clientRepository.GetClientByIdAsync(clientId, role, employeeId, supervisorId);
         }
 
+<<<<<<< HEAD
         public async Task<bool> CreateClientAsync(ClientCreateDto clientDto, string azureUserId)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
@@ -350,6 +374,11 @@ namespace Backend.Services
                 _logger.LogError(ex, "Failed to edit client for user {AzureUserId}", azureUserId);
                 throw;
             }
+=======
+        public async Task UpdateClientAsync(Client client)
+        {
+            await _clientRepository.UpdateClientAsync(client);
+>>>>>>> 3e9296e (working model fo cliets view, edit, list.)
         }
 
         public async Task<string?> GetClientFileUrlAsync(int clientId, string fileType)
@@ -363,6 +392,7 @@ namespace Backend.Services
                 .FirstOrDefaultAsync(e => e.EmployeeReferenceID == azureUserId);
             return employee?.EmployeeID ?? throw new InvalidOperationException("User not found in system.");
         }
+<<<<<<< HEAD
 
         private Client MapToClient(ClientCreateDto dto)
         {
@@ -599,5 +629,7 @@ namespace Backend.Services
                 throw;
             }
         }
+=======
+>>>>>>> 3e9296e (working model fo cliets view, edit, list.)
     }
 }
