@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 export interface SubscriptionPlan {
   subscriptionPlanID: number;
   planName: string; // Added to match the response structure
@@ -21,29 +20,17 @@ export interface PostPlacementPlan {
   createdBy: string | null;
   updatedTS: Date | null;
   updatedBy: string | null;
-=======
-export interface PaymentSchedule {
-  paymentDate: string;
-  amount: number;
-  isPaid: boolean;
-  paymentType: "Subscription" | "PostPlacement";
->>>>>>> 3e9296e (working model fo cliets view, edit, list.)
 }
 
 export interface ClientDetail {
   clientID: number;
   clientName: string;
-<<<<<<< HEAD
   enrollmentDate: Date | null;
-=======
-  enrollmentDate: string | null;
->>>>>>> 3e9296e (working model fo cliets view, edit, list.)
   techStack: string | null;
   visaStatus: string | null;
   personalPhoneNumber: string | null;
   personalEmailAddress: string | null;
   linkedInURL: string | null;
-<<<<<<< HEAD
   marketingStartDate: Date | null;
   marketingEndDate: Date | null;
   marketingEmailID: string | null;
@@ -81,24 +68,3 @@ export interface PaymentSchedule {
   updatedTS: Date | null;
   updatedBy: string | null;
 }
-=======
-  marketingStartDate: string | null;
-  marketingEndDate: string | null;
-  marketingEmailID: string | null;
-  assignedRecruiterID: number | null;
-  assignedRecruiterName: string | null;
-  clientStatus: string | null;
-  placedDate: string | null;
-  backedOutDate: string | null;
-  backedOutReason: string | null;
-  subscriptionPlanID: number | null;
-  subscriptionPlanName: string | null;
-  serviceAgreementUrl: string | null;
-  totalDue: number;
-  totalPaid: number;
-  postPlacementPlanID: number | null;
-  postPlacementPlanName: string | null;
-  promissoryNoteUrl: string | null;
-  paymentSchedules: PaymentSchedule[];
-}
->>>>>>> 3e9296e (working model fo cliets view, edit, list.)

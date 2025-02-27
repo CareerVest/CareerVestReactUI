@@ -5,23 +5,15 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Backend.Services;
 using Backend.Dtos;
-<<<<<<< HEAD
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using System.Text.Json;
-=======
-using Backend.Models;
->>>>>>> 3e9296e (working model fo cliets view, edit, list.)
 
 namespace Backend.Controllers.Api
 {
     [Route("api/v1/clients")]
     [ApiController]
-<<<<<<< HEAD
     [Authorize]
-=======
-    [Authorize] // ✅ Requires authentication for all endpoints
->>>>>>> 3e9296e (working model fo cliets view, edit, list.)
     public class ClientsController : ControllerBase
     {
         private readonly IClientService _clientService;
@@ -33,70 +25,8 @@ namespace Backend.Controllers.Api
             _logger = logger;
         }
 
-<<<<<<< HEAD
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ClientListDto>>> GetClients()
-=======
-        /// ✅ Get Clients Based on User Role
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<ClientListDto>>> GetClients()
-        {
-            var azureUserId = User.FindFirstValue("http://schemas.microsoft.com/identity/claims/objectidentifier");
-            Console.WriteLine($"Extracted User ID (Object Identifier): {azureUserId}");
-            var role = User.FindFirstValue(ClaimTypes.Role);
-            var supervisorId = User.FindFirstValue("SupervisorID");
-
-            if (string.IsNullOrEmpty(role))
-            {
-                _logger.LogWarning($"User {azureUserId} attempted to access clients without a valid role.");
-                return Unauthorized("User role is required.");
-            }
-
-            var clients = await _clientService.GetClientsForUserAsync(azureUserId, role, 
-                supervisorId != null ? int.Parse(supervisorId) : (int?)null);
-
-            return Ok(clients);
-        }
-
-        /// ✅ Get a Single Client Securely Based on Role
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetClientById(int id)
-        {
-            var azureUserId = User.FindFirstValue("http://schemas.microsoft.com/identity/claims/objectidentifier");
-            var role = User.FindFirstValue(ClaimTypes.Role);
-            var supervisorId = User.FindFirstValue("SupervisorID");
-
-            if (string.IsNullOrEmpty(role))
-            {
-                _logger.LogWarning($"User {azureUserId} attempted to access a client without a valid role.");
-                return Unauthorized("User role is required.");
-            }
-
-            var client = await _clientService.GetClientByIdForUserAsync(id, azureUserId, role, 
-                supervisorId != null ? int.Parse(supervisorId) : (int?)null);
-
-            if (client == null)
-                return NotFound("Client not found or unauthorized.");
-
-            return Ok(client);
-        }
-
-        /// ✅ Update Client Details (Admins Only)
-        [HttpPut("{id}")]
-        [Authorize(Roles = "Admin,Sales")]
-        public async Task<IActionResult> UpdateClient(int id, [FromBody] Client client)
-        {
-            if (id != client.ClientID)
-                return BadRequest("Client ID mismatch");
-
-            await _clientService.UpdateClientAsync(client);
-            return NoContent();
-        }
-
-        /// ✅ Open Service Agreement or Promissory Note
-        [HttpGet("{clientId}/open-file/{fileType}")]
-        public async Task<IActionResult> OpenFile(int clientId, string fileType)
->>>>>>> 3e9296e (working model fo cliets view, edit, list.)
         {
             var azureUserId = User.FindFirstValue("http://schemas.microsoft.com/identity/claims/objectidentifier");
             var role = User.FindFirstValue(ClaimTypes.Role);
@@ -149,7 +79,6 @@ namespace Backend.Controllers.Api
             var azureUserId = User.FindFirstValue("http://schemas.microsoft.com/identity/claims/objectidentifier");
             try
             {
-<<<<<<< HEAD
                 var success = await _clientService.CreateClientAsync(clientCreateDto, azureUserId);
                 return Ok(new { success });
             }
@@ -215,21 +144,6 @@ namespace Backend.Controllers.Api
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Unexpected error while fetching file for ClientID: {clientId}, FileType: {fileType} for user {azureUserId}");
-=======
-                var fileUrl = await _clientService.GetClientFileUrlAsync(clientId, fileType);
-
-                if (string.IsNullOrEmpty(fileUrl))
-                {
-                    _logger.LogWarning($"No file found for ClientID: {clientId}, FileType: {fileType}");
-                    return NotFound($"{fileType} file not found.");
-                }
-
-                return Redirect(fileUrl);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Unexpected error while fetching file: {ex.Message}");
->>>>>>> 3e9296e (working model fo cliets view, edit, list.)
                 return StatusCode(500, $"An error occurred: {ex.Message}");
             }
         }

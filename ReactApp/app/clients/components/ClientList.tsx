@@ -23,16 +23,12 @@ import {
 } from "@mui/icons-material";
 import { useRouter } from "next/navigation";
 import type { ClientList } from "@/app/types/Clients/ClientList";
-<<<<<<< HEAD
 import { useAuth } from "@/contexts/authContext"; // Removed AddClientButton import
-=======
->>>>>>> 3e9296e (working model fo cliets view, edit, list.)
 
 interface ClientListProps {
   clients: ClientList[];
 }
 
-<<<<<<< HEAD
 // Define permissions for ClientList page
 interface ClientListPermissions {
   viewList: boolean;
@@ -79,13 +75,6 @@ const permissions: Record<string, ClientListPermissions> = {
     deleteClient: false,
   },
 };
-=======
-// const dummyRecruiters = {
-//   1: "Sarah Thompson",
-//   2: "Michael Brown",
-//   3: "Emily Davis",
-// };
->>>>>>> 3e9296e (working model fo cliets view, edit, list.)
 
 export default function ClientList({ clients }: ClientListProps) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -133,17 +122,12 @@ export default function ClientList({ clients }: ClientListProps) {
   );
 
   const handleDelete = useCallback((id: number) => {
-<<<<<<< HEAD
     if (permissions[userRole].deleteClient && confirm("Are you sure you want to delete this client?")) {
       // Add delete logic here if implemented
-=======
-    if (confirm("Are you sure you want to delete this client?")) {
->>>>>>> 3e9296e (working model fo cliets view, edit, list.)
     }
   }, [userRole]);
 
   const formatDate = (date: string | Date | null) => {
-<<<<<<< HEAD
     if (!date) return "N/A";
     const parsedDate = date instanceof Date ? date : new Date(date);
     if (isNaN(parsedDate.getTime())) return "N/A";
@@ -151,17 +135,6 @@ export default function ClientList({ clients }: ClientListProps) {
     const day = parsedDate.getDate();
     const year = parsedDate.getFullYear();
     return `${month.toString().padStart(2, "0")}/${day.toString().padStart(2, "0")}/${year}`;
-=======
-    if (!date) return "N/A"; // Handle null or undefined
-    const parsedDate = date instanceof Date ? date : new Date(date); // Ensure it's a Date object
-    if (isNaN(parsedDate.getTime())) return "N/A"; // Handle invalid dates
-    const month = parsedDate.getMonth() + 1; // Months are zero-based
-    const day = parsedDate.getDate();
-    const year = parsedDate.getFullYear();
-    return `${month.toString().padStart(2, "0")}/${day
-      .toString()
-      .padStart(2, "0")}/${year}`;
->>>>>>> 3e9296e (working model fo cliets view, edit, list.)
   };
 
   const columns: GridColDef[] = useMemo(
@@ -207,12 +180,7 @@ export default function ClientList({ clients }: ClientListProps) {
         flex: 1,
         minWidth: 150,
         valueGetter: (params: GridRenderCellParams<any, ClientList>) => {
-<<<<<<< HEAD
           if (!params) return "N/A";
-=======
-          if (!params) return "N/A"; // ✅ Null safety check
-
->>>>>>> 3e9296e (working model fo cliets view, edit, list.)
           return params;
         },
       },

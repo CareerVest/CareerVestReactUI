@@ -18,7 +18,6 @@ import {
   Paper,
   CircularProgress,
   Link,
-<<<<<<< HEAD
   IconButton,
   InputAdornment,
 } from "@mui/material";
@@ -29,20 +28,10 @@ import { useAuth } from "@/contexts/authContext";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import permissions from "../../utils/permissions";
-=======
-} from "@mui/material";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import { getClient } from "../actions/clientActions";
-import type {
-  ClientDetail,
-  PaymentSchedule,
-} from "../../types/Clients/ClientDetail";
->>>>>>> 3e9296e (working model fo cliets view, edit, list.)
 
 export default function ClientView({ params }: { params: { id: string } }) {
   const [client, setClient] = useState<ClientDetail | null>(null);
   const [loading, setLoading] = useState(true);
-<<<<<<< HEAD
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const { roles } = useAuth();
@@ -59,9 +48,6 @@ export default function ClientView({ params }: { params: { id: string } }) {
         ? "recruiter"
         : "default"
       : "default";
-=======
-  const router = useRouter();
->>>>>>> 3e9296e (working model fo cliets view, edit, list.)
 
   useEffect(() => {
     const fetchClient = async () => {
@@ -71,18 +57,10 @@ export default function ClientView({ params }: { params: { id: string } }) {
           setClient(clientData);
         } else {
           console.error("Client not found");
-<<<<<<< HEAD
         }
       } catch (error) {
         console.error("Failed to fetch client:", error);
         alert("Failed to load client data. Please try again or contact support.");
-=======
-          // You can set an error state here if you want to display a specific error message
-        }
-      } catch (error) {
-        console.error("Failed to fetch client:", error);
-        alert("Failed to load client data. Please try again.");
->>>>>>> 3e9296e (working model fo cliets view, edit, list.)
       } finally {
         setLoading(false);
       }
@@ -95,7 +73,6 @@ export default function ClientView({ params }: { params: { id: string } }) {
     router.push("/clients");
   };
 
-<<<<<<< HEAD
   const handleClickShowPassword = () => setShowPassword((prev) => !prev);
 
   const canEdit =
@@ -106,8 +83,6 @@ export default function ClientView({ params }: { params: { id: string } }) {
     !!permissions.clients[userRole].subscriptionInfo.edit ||
     !!permissions.clients[userRole].postPlacementInfo.edit;
 
-=======
->>>>>>> 3e9296e (working model fo cliets view, edit, list.)
   if (loading) {
     return (
       <Box
@@ -126,34 +101,20 @@ export default function ClientView({ params }: { params: { id: string } }) {
   if (!client) {
     return (
       <Box sx={{ p: 3 }}>
-<<<<<<< HEAD
         <Button startIcon={<ArrowBackIcon />} onClick={handleBack} sx={{ mb: 2 }}>
-=======
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={handleBack}
-          sx={{ mb: 2 }}
-        >
->>>>>>> 3e9296e (working model fo cliets view, edit, list.)
           Back to Clients
         </Button>
         <Typography variant="h4" gutterBottom>
           Client Not Found
         </Typography>
         <Typography>
-<<<<<<< HEAD
           The client with ID {params.id} doesn’t exist or has been removed. Please
           check the client ID and try again.
-=======
-          The client you're looking for doesn't exist or has been removed.
-          Please check the client ID and try again.
->>>>>>> 3e9296e (working model fo cliets view, edit, list.)
         </Typography>
       </Box>
     );
   }
 
-<<<<<<< HEAD
   const formatDate = (date: Date | string | null | undefined): string => {
     if (!date) return "N/A";
     const d = date instanceof Date ? date : new Date(date);
@@ -163,18 +124,12 @@ export default function ClientView({ params }: { params: { id: string } }) {
       month: "long",
       day: "numeric",
     });
-=======
-  const formatDate = (date: string | null) => {
-    if (!date) return "N/A";
-    return new Date(date).toLocaleDateString();
->>>>>>> 3e9296e (working model fo cliets view, edit, list.)
   };
 
   const renderPaymentSchedule = (
     schedules: PaymentSchedule[],
     type: "Subscription" | "Post-Placement"
   ) => (
-<<<<<<< HEAD
     <TableContainer component={Paper} sx={{ mt: 2, mb: 2 }}>
       <Table size="small">
         <TableHead>
@@ -200,25 +155,6 @@ export default function ClientView({ params }: { params: { id: string } }) {
               </TableCell>
             </TableRow>
           )}
-=======
-    <TableContainer component={Paper} sx={{ mt: 2 }}>
-      <Table size="small">
-        <TableHead>
-          <TableRow>
-            <TableCell>Payment Date</TableCell>
-            <TableCell>Amount</TableCell>
-            <TableCell>Status</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {schedules.map((payment, index) => (
-            <TableRow key={index}>
-              <TableCell>{formatDate(payment.paymentDate)}</TableCell>
-              <TableCell>${payment.amount.toFixed(2)}</TableCell>
-              <TableCell>{payment.isPaid ? "Paid" : "Pending"}</TableCell>
-            </TableRow>
-          ))}
->>>>>>> 3e9296e (working model fo cliets view, edit, list.)
         </TableBody>
       </Table>
     </TableContainer>
@@ -233,7 +169,6 @@ export default function ClientView({ params }: { params: { id: string } }) {
         Client Details: {client.clientName}
       </Typography>
       <Grid container spacing={2}>
-<<<<<<< HEAD
         {permissions.clients[userRole].basicInfo.view && (
           <Grid item xs={12} md={6}>
             <Card>
@@ -532,274 +467,3 @@ export default function ClientView({ params }: { params: { id: string } }) {
     </Box>
   );
 }
-=======
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Basic Information
-              </Typography>
-              <Table size="small">
-                <TableBody>
-                  <TableRow>
-                    <TableCell component="th" scope="row">
-                      Client Name
-                    </TableCell>
-                    <TableCell>{client.clientName}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell component="th" scope="row">
-                      Enrollment Date
-                    </TableCell>
-                    <TableCell>{formatDate(client.enrollmentDate)}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell component="th" scope="row">
-                      Tech Stack
-                    </TableCell>
-                    <TableCell>{client.techStack || "N/A"}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell component="th" scope="row">
-                      Visa Status
-                    </TableCell>
-                    <TableCell>{client.visaStatus || "N/A"}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell component="th" scope="row">
-                      Personal Phone Number
-                    </TableCell>
-                    <TableCell>{client.personalPhoneNumber || "N/A"}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell component="th" scope="row">
-                      Personal Email Address
-                    </TableCell>
-                    <TableCell>
-                      {client.personalEmailAddress || "N/A"}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell component="th" scope="row">
-                      LinkedIn URL
-                    </TableCell>
-                    <TableCell>
-                      {client.linkedInURL ? (
-                        <Link
-                          href={client.linkedInURL}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          {client.linkedInURL}
-                        </Link>
-                      ) : (
-                        "N/A"
-                      )}
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Marketing & Status Information
-              </Typography>
-              <Table size="small">
-                <TableBody>
-                  <TableRow>
-                    <TableCell component="th" scope="row">
-                      Marketing Start Date
-                    </TableCell>
-                    <TableCell>
-                      {formatDate(client.marketingStartDate)}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell component="th" scope="row">
-                      Marketing End Date
-                    </TableCell>
-                    <TableCell>{formatDate(client.marketingEndDate)}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell component="th" scope="row">
-                      Marketing Email ID
-                    </TableCell>
-                    <TableCell>{client.marketingEmailID || "N/A"}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell component="th" scope="row">
-                      Assigned Recruiter Name
-                    </TableCell>
-                    <TableCell>
-                      {client.assignedRecruiterName || "N/A"}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell component="th" scope="row">
-                      Client Status
-                    </TableCell>
-                    <TableCell>{client.clientStatus || "N/A"}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell component="th" scope="row">
-                      Placed Date
-                    </TableCell>
-                    <TableCell>{formatDate(client.placedDate)}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell component="th" scope="row">
-                      Backed Out Date
-                    </TableCell>
-                    <TableCell>{formatDate(client.backedOutDate)}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell component="th" scope="row">
-                      Backed Out Reason
-                    </TableCell>
-                    <TableCell>{client.backedOutReason || "N/A"}</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Subscription Information
-              </Typography>
-              <Table size="small">
-                <TableBody>
-                  <TableRow>
-                    <TableCell component="th" scope="row">
-                      Subscription Plan Name
-                    </TableCell>
-                    <TableCell>
-                      {client.subscriptionPlanName || "N/A"}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell component="th" scope="row">
-                      Total Due
-                    </TableCell>
-                    <TableCell>${client.totalDue.toFixed(2)}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell component="th" scope="row">
-                      Service Agreement
-                    </TableCell>
-                    <TableCell>
-                      {client.subscriptionPlanID &&
-                      client.serviceAgreementUrl ? (
-                        <Link
-                          href={client.serviceAgreementUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          View Current Service Agreement
-                        </Link>
-                      ) : (
-                        "N/A"
-                      )}
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-              <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-                Subscription Payment Schedule
-              </Typography>
-              {client.paymentSchedules && client.paymentSchedules.length > 0 ? (
-                renderPaymentSchedule(
-                  client.paymentSchedules.filter(
-                    (ps) => ps.paymentType === "Subscription"
-                  ),
-                  "Subscription"
-                )
-              ) : (
-                <Typography>
-                  No subscription payment schedule available.
-                </Typography>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Post-Placement Information
-              </Typography>
-              <Table size="small">
-                <TableBody>
-                  <TableRow>
-                    <TableCell component="th" scope="row">
-                      Post-Placement Plan Name
-                    </TableCell>
-                    <TableCell>
-                      {client.postPlacementPlanName || "N/A"}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell component="th" scope="row">
-                      Total Paid
-                    </TableCell>
-                    <TableCell>${client.totalPaid.toFixed(2)}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell component="th" scope="row">
-                      Promissory Note
-                    </TableCell>
-                    <TableCell>
-                      {client.postPlacementPlanID &&
-                      client.promissoryNoteUrl ? (
-                        <Link
-                          href={client.promissoryNoteUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          View Current Promissory Note
-                        </Link>
-                      ) : (
-                        "N/A"
-                      )}
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-              <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-                Post-Placement Payment Schedule
-              </Typography>
-              {client.paymentSchedules && client.paymentSchedules.length > 0 ? (
-                renderPaymentSchedule(
-                  client.paymentSchedules.filter(
-                    (ps) => ps.paymentType === "PostPlacement"
-                  ),
-                  "Post-Placement"
-                )
-              ) : (
-                <Typography>
-                  No post-placement payment schedule available.
-                </Typography>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-      <Box sx={{ mt: 3, display: "flex", justifyContent: "flex-end", gap: 2 }}>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={() => router.push(`/clients/${client.clientID}/edit`)}
-        >
-          Edit Client
-        </Button>
-      </Box>
-    </Box>
-  );
-}
->>>>>>> 3e9296e (working model fo cliets view, edit, list.)

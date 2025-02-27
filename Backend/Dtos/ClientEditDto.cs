@@ -30,12 +30,4 @@ namespace Backend.Dtos
         public string? PostPlacementPlanName { get; set; }
         public List<PaymentScheduleDto> PaymentSchedules { get; set; } = new();
     }
-
-    public class PaymentScheduleDto
-    {
-        public DateTime PaymentDate { get; set; }
-        public decimal Amount { get; set; }
-        public bool IsPaid { get; set; }
-        public string PaymentType { get; set; } = "Subscription";
-    }
 }
