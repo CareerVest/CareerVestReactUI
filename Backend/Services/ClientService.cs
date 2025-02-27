@@ -352,6 +352,101 @@ namespace Backend.Services
             }
         }
 
+        public async Task<bool> DeleteClientAsync(int clientId, string azureUserId)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var client = await _context.Clients
+                    .Include(c => c.SubscriptionPlan)
+                    .Include(c => c.PostPlacementPlan)
+                    .Include(c => c.PaymentSchedules)
+                    .FirstOrDefaultAsync(c => c.ClientID == clientId);
+
+                if (client == null)
+                {
+                    throw new KeyNotFoundException("Client not found.");
+                }
+
+                // Remove related PaymentSchedules
+                if (client.PaymentSchedules != null && client.PaymentSchedules.Any())
+                {
+                    _context.PaymentSchedules.RemoveRange(client.PaymentSchedules);
+                }
+
+                // Remove SubscriptionPlan if exists
+                if (client.SubscriptionPlan != null)
+                {
+                    _context.SubscriptionPlan.Remove(client.SubscriptionPlan);
+                }
+
+                // Remove PostPlacementPlan if exists
+                if (client.PostPlacementPlan != null)
+                {
+                    _context.PostPlacementPlan.Remove(client.PostPlacementPlan);
+                }
+
+                // // Remove the client folder from SharePoint
+                // var environment = _configuration["ASPNETCORE_ENVIRONMENT"];
+                // string rootFolder = environment == "Development"
+                //     ? $"{_configuration["SharePoint:RootFolderName"]}/{_configuration["SharePoint:TestingFolder"]}"
+                //     : $"{_configuration["SharePoint:RootFolderName"]}/{_configuration["SharePoint:ProductionFolder"]}";
+                // string clientFolderPath = $"{rootFolder}/{client.ClientName}";
+                // await DeleteClientFolderFromSharePoint(clientFolderPath);
+
+                // Remove the client from the database
+                _context.Clients.Remove(client);
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Failed to delete client for user {AzureUserId}", azureUserId);
+                throw;
+            }
+        }
+
+        private async Task DeleteClientFolderFromSharePoint(string folderPath)
+        {
+            try
+            {
+                var siteId = _configuration["SharePoint:SiteId"];
+                var driveId = _configuration["SharePoint:DriveId"];
+
+                var folderItem = await _graphClient.Sites[siteId].Drives[driveId].Root
+                    .ItemWithPath(folderPath)
+                    .Request()
+                    .GetAsync();
+
+                if (folderItem != null)
+                {
+                    await _graphClient.Sites[siteId].Drives[driveId].Items[folderItem.Id]
+                        .Request()
+                        .DeleteAsync();
+
+                    _logger.LogInformation($"Client folder deleted from SharePoint: {folderPath}");
+                }
+                else
+                {
+                    _logger.LogWarning($"Client folder not found in SharePoint: {folderPath}");
+                }
+            }
+            catch (ServiceException ex)
+            {
+                _logger.LogError($"SharePoint API error while deleting folder: {ex.Error.Code} - {ex.Error.Message}");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Unexpected error during folder deletion: {ex.Message}");
+                throw;
+            }
+        }
+
         public async Task<string?> GetClientFileUrlAsync(int clientId, string fileType)
         {
             return await _clientRepository.GetClientFileUrlAsync(clientId, fileType);

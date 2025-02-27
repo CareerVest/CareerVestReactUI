@@ -206,7 +206,7 @@ export async function updateClient(
     }
 
     console.log("🔹 Data to Update Client:", { updatedClient, serviceAgreementFile, promissoryNoteFile });
-    const response = await axiosInstance.put(`/api/v1/clients/${id}/edit`, formData, { // Updated endpoint
+    const response = await axiosInstance.put(`/api/v1/clients/${id}/edit`, formData, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "multipart/form-data",
@@ -249,38 +249,81 @@ export async function createClient(
       throw new Error("ClientStatus is required.");
     }
 
-    // Conditionally include nested objects only if they have data
+    // Prepare client data with proper type checking and default values
     const clientDataToSend = {
       clientID: createClientData.clientID || 0,
       clientName: createClientData.clientName,
-      enrollmentDate: createClientData.enrollmentDate,
-      techStack: createClientData.techStack,
-      personalPhoneNumber: createClientData.personalPhoneNumber,
-      personalEmailAddress: createClientData.personalEmailAddress,
-      assignedRecruiterID: createClientData.assignedRecruiterID,
-      visaStatus: createClientData.visaStatus,
-      linkedInURL: createClientData.linkedInURL,
+      enrollmentDate: createClientData.enrollmentDate ? new Date(createClientData.enrollmentDate).toISOString() : null,
+      techStack: createClientData.techStack || null,
+      personalPhoneNumber: createClientData.personalPhoneNumber || null,
+      personalEmailAddress: createClientData.personalEmailAddress || null,
+      assignedRecruiterID: createClientData.assignedRecruiterID || null,
+      visaStatus: createClientData.visaStatus || null,
+      linkedInURL: createClientData.linkedInURL || null,
       clientStatus: createClientData.clientStatus,
-      marketingStartDate: createClientData.marketingStartDate,
-      marketingEndDate: createClientData.marketingEndDate,
-      marketingEmailID: createClientData.marketingEmailID,
-      marketingEmailPassword: createClientData.marketingEmailPassword,
-      placedDate: createClientData.placedDate,
-      backedOutDate: createClientData.backedOutDate,
-      backedOutReason: createClientData.backedOutReason,
-      totalDue: createClientData.totalDue || 0.0,
-      totalPaid: createClientData.totalPaid || 0.0,
-      subscriptionPlanID: createClientData.subscriptionPlanID,
-      postPlacementPlanID: createClientData.postPlacementPlanID,
-      paymentSchedules: createClientData.paymentSchedules && createClientData.paymentSchedules.length > 0 ? createClientData.paymentSchedules : undefined,
-      serviceAgreementUrl: createClientData.serviceAgreementUrl,
-      promissoryNoteUrl: createClientData.promissoryNoteUrl,
+      marketingStartDate: createClientData.marketingStartDate ? new Date(createClientData.marketingStartDate).toISOString() : null,
+      marketingEndDate: createClientData.marketingEndDate ? new Date(createClientData.marketingEndDate).toISOString() : null,
+      marketingEmailID: createClientData.marketingEmailID || null,
+      marketingEmailPassword: createClientData.marketingEmailPassword || null,
+      placedDate: createClientData.placedDate ? new Date(createClientData.placedDate).toISOString() : null,
+      backedOutDate: createClientData.backedOutDate ? new Date(createClientData.backedOutDate).toISOString() : null,
+      backedOutReason: createClientData.backedOutReason || null,
+      totalDue: createClientData.totalDue !== undefined && createClientData.totalDue !== null ? Number(createClientData.totalDue) || 0.0 : 0.0,
+      totalPaid: createClientData.totalPaid !== undefined && createClientData.totalPaid !== null ? Number(createClientData.totalPaid) || 0.0 : 0.0,
+      subscriptionPlanID: createClientData.subscriptionPlanID || null,
+      postPlacementPlanID: createClientData.postPlacementPlanID || null,
+      paymentSchedules: createClientData.paymentSchedules && createClientData.paymentSchedules.length > 0 
+        ? createClientData.paymentSchedules.map(ps => ({
+            paymentScheduleID: ps.paymentScheduleID || 0,
+            clientID: ps.clientID || 0,
+            paymentDate: ps.paymentDate ? new Date(ps.paymentDate).toISOString() : null,
+            amount: ps.amount !== undefined && ps.amount !== null ? Number(ps.amount) || 0 : 0,
+            isPaid: ps.isPaid ?? false,
+            paymentType: ps.paymentType || "Subscription",
+            subscriptionPlanID: ps.subscriptionPlanID || null,
+            postPlacementPlanID: ps.postPlacementPlanID || null,
+            createdTS: ps.createdTS ? new Date(ps.createdTS).toISOString() : null,
+            createdBy: ps.createdBy || null,
+            updatedTS: ps.updatedTS ? new Date(ps.updatedTS).toISOString() : null,
+            updatedBy: ps.updatedBy || null,
+          }))
+        : undefined,
+      serviceAgreementUrl: createClientData.serviceAgreementUrl || null,
+      promissoryNoteUrl: createClientData.promissoryNoteUrl || null,
       subscriptionPlan: createClientData.subscriptionPlan && Object.values(createClientData.subscriptionPlan).some(v => v !== null && v !== "") 
-        ? createClientData.subscriptionPlan 
-        : undefined,
+        ? {
+            subscriptionPlanID: createClientData.subscriptionPlan.subscriptionPlanID || 0,
+            planName: createClientData.subscriptionPlan.planName || "",
+            serviceAgreementUrl: createClientData.subscriptionPlan.serviceAgreementUrl || null,
+            subscriptionPlanPaymentStartDate: createClientData.subscriptionPlan.subscriptionPlanPaymentStartDate 
+              ? new Date(createClientData.subscriptionPlan.subscriptionPlanPaymentStartDate).toISOString() 
+              : null,
+            totalSubscriptionAmount: createClientData.subscriptionPlan.totalSubscriptionAmount !== undefined && createClientData.subscriptionPlan.totalSubscriptionAmount !== null 
+              ? Number(createClientData.subscriptionPlan.totalSubscriptionAmount) || 0 
+              : null,
+            createdTS: createClientData.subscriptionPlan.createdTS ? new Date(createClientData.subscriptionPlan.createdTS).toISOString() : null,
+            createdBy: createClientData.subscriptionPlan.createdBy || null,
+            updatedTS: createClientData.subscriptionPlan.updatedTS ? new Date(createClientData.subscriptionPlan.updatedTS).toISOString() : null,
+            updatedBy: createClientData.subscriptionPlan.updatedBy || null,
+          }
+        : null,
       postPlacementPlan: createClientData.postPlacementPlan && Object.values(createClientData.postPlacementPlan).some(v => v !== null && v !== "") 
-        ? createClientData.postPlacementPlan 
-        : undefined,
+        ? {
+            postPlacementPlanID: createClientData.postPlacementPlan.postPlacementPlanID || 0,
+            planName: createClientData.postPlacementPlan.planName || "",
+            promissoryNoteUrl: createClientData.postPlacementPlan.promissoryNoteUrl || null,
+            postPlacementPlanPaymentStartDate: createClientData.postPlacementPlan.postPlacementPlanPaymentStartDate 
+              ? new Date(createClientData.postPlacementPlan.postPlacementPlanPaymentStartDate).toISOString() 
+              : null,
+            totalPostPlacementAmount: createClientData.postPlacementPlan.totalPostPlacementAmount !== undefined && createClientData.postPlacementPlan.totalPostPlacementAmount !== null 
+              ? Number(createClientData.postPlacementPlan.totalPostPlacementAmount) || 0 
+              : null,
+            createdTS: createClientData.postPlacementPlan.createdTS ? new Date(createClientData.postPlacementPlan.createdTS).toISOString() : null,
+            createdBy: createClientData.postPlacementPlan.createdBy || null,
+            updatedTS: createClientData.postPlacementPlan.updatedTS ? new Date(createClientData.postPlacementPlan.updatedTS).toISOString() : null,
+            updatedBy: createClientData.postPlacementPlan.updatedBy || null,
+          }
+        : null,
     };
 
     // Append client data as a single JSON string
@@ -308,7 +351,7 @@ export async function createClient(
       },
     });
 
-    if (response.status === 201) {
+    if (response.status === 200) {
       console.log("✅ Client Created Successfully");
       return true; // Return true on success
     } else {
@@ -320,5 +363,32 @@ export async function createClient(
       throw new Error("Authentication required. Redirecting to login...");
     }
     throw new Error(`Failed to create client: ${error.response?.data?.message || error.message}`);
+  }
+}
+
+export async function deleteClient(id: number): Promise<boolean> {
+  let token = getAccessToken();
+  console.log("🔹 Initial Access Token for Delete Client:", token);
+
+  try {
+    token = await refreshTokenIfNeeded(token);
+    const response = await axiosInstance.delete(`/api/v1/clients/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (response.status !== 204) {
+      throw new Error(`Unexpected response status: ${response.status} - ${JSON.stringify(response.data)}`);
+    }
+
+    console.log("✅ Client Deleted Successfully");
+    return true;
+  } catch (error: any) {
+    console.error(`Error deleting client (ID: ${id}):`, error.response?.data || error.message);
+    if (error.message?.includes("Token expired") || error.message?.includes("Access token is missing")) {
+      throw new Error("Authentication required. Redirecting to login...");
+    }
+    throw new Error(`Failed to delete client: ${error.response?.data?.message || error.message}`);
   }
 }

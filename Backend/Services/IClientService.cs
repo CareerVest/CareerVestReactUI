@@ -11,5 +11,6 @@ namespace Backend.Services
         Task<bool> CreateClientAsync(ClientCreateDto clientDto, string azureUserId);
         Task EditClientAsync(int id, ClientUpdateDto clientDto, string azureUserId);
         Task<string?> GetClientFileUrlAsync(int clientId, string fileType);
+        Task<bool> DeleteClientAsync(int clientId, string azureUserId); // New method for delete
     }
 }

@@ -220,7 +220,6 @@ app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

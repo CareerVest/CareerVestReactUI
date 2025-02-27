@@ -147,6 +147,35 @@ namespace Backend.Controllers.Api
                 return StatusCode(500, $"An error occurred: {ex.Message}");
             }
         }
+
+        /// <summary>
+        /// Deletes a client and associated data.
+        /// </summary>
+        /// <param name="id">Client ID</param>
+        /// <returns>No content if successful</returns>
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteClient(int id)
+        {
+            var azureUserId = User.FindFirstValue("http://schemas.microsoft.com/identity/claims/objectidentifier");
+            try
+            {
+                var success = await _clientService.DeleteClientAsync(id, azureUserId);
+                if (!success)
+                {
+                    return NotFound("Client not found or unauthorized.");
+                }
+                return NoContent();
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound("Client not found.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting client {ClientId} for user {AzureUserId}", id, azureUserId);
+                return StatusCode(500, "An error occurred while deleting the client.");
+            }
+        }
     }
 
     // Custom Model Binder for ClientCreateDto
