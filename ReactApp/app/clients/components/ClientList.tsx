@@ -9,6 +9,12 @@ import {
   IconButton,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Button,
 } from "@mui/material";
 import {
   DataGrid,
@@ -23,7 +29,8 @@ import {
 } from "@mui/icons-material";
 import { useRouter } from "next/navigation";
 import type { ClientList } from "@/app/types/Clients/ClientList";
-import { useAuth } from "@/contexts/authContext"; // Removed AddClientButton import
+import { useAuth } from "@/contexts/authContext";
+import { deleteClient } from "../actions/clientActions";
 
 interface ClientListProps {
   clients: ClientList[];
@@ -76,10 +83,14 @@ const permissions: Record<string, ClientListPermissions> = {
   },
 };
 
-export default function ClientList({ clients }: ClientListProps) {
+export default function ClientList({ clients: initialClients }: ClientListProps) {
+  const [clients, setClients] = useState<ClientList[]>(initialClients); // Use state to manage client list for updates
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [windowWidth, setWindowWidth] = useState<number>(window.innerWidth);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false); // State for delete dialog
+  const [clientToDelete, setClientToDelete] = useState<number | null>(null); // Track client to delete
+  const [deleteError, setDeleteError] = useState<string | null>(null); // State for error messages
   const router = useRouter();
   const { roles } = useAuth();
 
@@ -121,11 +132,44 @@ export default function ClientList({ clients }: ClientListProps) {
     [router, userRole]
   );
 
-  const handleDelete = useCallback((id: number) => {
-    if (permissions[userRole].deleteClient && confirm("Are you sure you want to delete this client?")) {
-      // Add delete logic here if implemented
+  const handleDeleteClick = useCallback((id: number) => {
+    if (permissions[userRole].deleteClient) {
+      setClientToDelete(id);
+      setDeleteDialogOpen(true);
     }
   }, [userRole]);
+
+  const handleDeleteConfirm = useCallback(async () => {
+    if (clientToDelete === null) return;
+
+    try {
+      setLoading(true);
+      setDeleteError(null);
+      const success = await deleteClient(clientToDelete);
+      if (success) {
+        // Update the client list by filtering out the deleted client
+        setClients(clients.filter(client => client.clientID !== clientToDelete));
+        console.log("✅ Client deleted successfully");
+        setDeleteDialogOpen(false);
+        setClientToDelete(null);
+      }
+    } catch (error) {
+      console.error("Error deleting client:", error);
+      if (error instanceof Error) {
+        setDeleteError(error.message || "Failed to delete client. Please try again.");
+      } else {
+        setDeleteError("Failed to delete client. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [clientToDelete, clients]);
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setClientToDelete(null);
+    setDeleteError(null);
+  };
 
   const formatDate = (date: string | Date | null) => {
     if (!date) return "N/A";
@@ -229,7 +273,7 @@ export default function ClientList({ clients }: ClientListProps) {
             )}
             {permissions[userRole].deleteClient && (
               <IconButton
-                onClick={() => handleDelete(params.row.clientID)}
+                onClick={() => handleDeleteClick(params.row.clientID)}
                 size="small"
                 color="error"
               >
@@ -240,7 +284,7 @@ export default function ClientList({ clients }: ClientListProps) {
         ),
       },
     ],
-    [handleView, handleEdit, handleDelete, formatDate, userRole]
+    [handleView, handleEdit, handleDeleteClick, formatDate, userRole]
   );
 
   const filteredClients = useMemo(() => {
@@ -305,6 +349,39 @@ export default function ClientList({ clients }: ClientListProps) {
           />
         )}
       </Paper>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+      >
+        <DialogTitle id="delete-dialog-title">Confirm Deletion</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="delete-dialog-description">
+            Are you sure you want to delete this client? This action cannot be undone, and all associated data, including payment schedules, plans, and files, will be permanently removed.
+          </DialogContentText>
+          {deleteError && (
+            <DialogContentText color="error" sx={{ mt: 1 }}>
+              {deleteError}
+            </DialogContentText>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} color="primary">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleDeleteConfirm}
+            color="error"
+            disabled={loading}
+            startIcon={loading ? <CircularProgress size={20} /> : null}
+          >
+            {loading ? "Deleting..." : "Delete"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
