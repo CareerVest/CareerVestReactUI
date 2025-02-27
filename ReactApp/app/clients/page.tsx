@@ -10,26 +10,83 @@ import ClientList from "./components/ClientList";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/authContext";
 
+// Define permissions for ClientsPage (consistent with ClientList.tsx)
+interface ClientPagePermissions {
+  viewList: boolean;
+  addClient: boolean;
+  viewClient: boolean;
+  editClient: boolean;
+  deleteClient: boolean;
+}
+
+const permissions: Record<string, ClientPagePermissions> = {
+  Admin: {
+    viewList: true,
+    addClient: true,
+    viewClient: true,
+    editClient: true,
+    deleteClient: true,
+  },
+  Senior_Recruiter: {
+    viewList: true,
+    addClient: false,
+    viewClient: true,
+    editClient: true,
+    deleteClient: false,
+  },
+  Sales_Executive: {
+    viewList: true,
+    addClient: false,
+    viewClient: true,
+    editClient: false,
+    deleteClient: false,
+  },
+  recruiter: {
+    viewList: true,
+    addClient: false,
+    viewClient: true,
+    editClient: false,
+    deleteClient: false,
+  },
+  default: {
+    viewList: true,
+    addClient: false,
+    viewClient: true,
+    editClient: false,
+    deleteClient: false,
+  },
+};
+
 export default function ClientsPage() {
   const [clients, setClients] = useState<ClientListType[]>([]);
   const [loading, setLoading] = useState(true);
-  const { isAuthenticated, isInitialized, user, login } = useAuth(); // Added `login` for potential re-authentication
+  const { isAuthenticated, isInitialized, user, login, roles } = useAuth();
   const router = useRouter();
 
+  // Determine user role with Azure AD casing
+  const userRole = roles.length > 0 
+    ? (roles.includes("Admin") 
+        ? "Admin" 
+        : roles.includes("Sales_Executive") 
+          ? "Sales_Executive" 
+          : roles.includes("Senior_Recruiter") 
+            ? "Senior_Recruiter" 
+            : roles.includes("recruiter") 
+              ? "recruiter" 
+              : "default") 
+    : "default";
+
   useEffect(() => {
-    if (!isInitialized) return; // Wait until auth is initialized
+    if (!isInitialized) return;
 
-    console.log("🔹 Auth State on Load:", { isAuthenticated, isInitialized, user });
+    console.log("🔹 Auth State on Load:", { isAuthenticated, isInitialized, user, roles, userRole });
 
-    // Add a longer delay to allow auth state to fully rehydrate
     const checkAuthAndLoad = async () => {
-      // Wait longer to ensure auth state is fully rehydrated
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Increased delay to 2s for stability
-
+      await new Promise(resolve => setTimeout(resolve, 2000));
       if (!isAuthenticated) {
         console.log("❌ User Not Authenticated, Attempting Silent Re-authentication...");
         try {
-          const loginSuccess = await login(); // Attempt silent login or redirect
+          const loginSuccess = await login();
           if (!loginSuccess) {
             console.log("❌ Silent Re-authentication failed, Redirecting to /login...");
             router.push("/login");
@@ -63,14 +120,14 @@ export default function ClientsPage() {
     };
 
     checkAuthAndLoad();
-  }, [isAuthenticated, isInitialized, router, login]);
+  }, [isAuthenticated, isInitialized, router, login, roles]);
 
   if (!isInitialized) {
     return <Box sx={{ p: 3 }}>Verifying authentication...</Box>;
   }
 
   if (!isAuthenticated) {
-    return <Box sx={{ p: 3 }}>Redirecting to login...</Box>; // Fallback for debugging
+    return <Box sx={{ p: 3 }}>Redirecting to login...</Box>;
   }
 
   return (
@@ -86,7 +143,7 @@ export default function ClientsPage() {
         <Typography variant="h4" component="h1" sx={{ color: "#682A53" }}>
           Clients
         </Typography>
-        <AddClientButton />
+        {permissions[userRole].addClient && <AddClientButton />}
       </Box>
       {loading ? <ClientListSkeleton /> : <ClientList clients={clients} />}
     </Box>

@@ -23,22 +23,78 @@ import {
 } from "@mui/icons-material";
 import { useRouter } from "next/navigation";
 import type { ClientList } from "@/app/types/Clients/ClientList";
+import { useAuth } from "@/contexts/authContext"; // Removed AddClientButton import
 
 interface ClientListProps {
   clients: ClientList[];
 }
 
-// const dummyRecruiters = {
-//   1: "Sarah Thompson",
-//   2: "Michael Brown",
-//   3: "Emily Davis",
-// };
+// Define permissions for ClientList page
+interface ClientListPermissions {
+  viewList: boolean;
+  addClient: boolean; // Still needed for logic, but not rendering button here
+  viewClient: boolean;
+  editClient: boolean;
+  deleteClient: boolean;
+}
+
+const permissions: Record<string, ClientListPermissions> = {
+  Admin: {
+    viewList: true,
+    addClient: true,
+    viewClient: true,
+    editClient: true,
+    deleteClient: true,
+  },
+  Senior_Recruiter: {
+    viewList: true,
+    addClient: false,
+    viewClient: true,
+    editClient: true,
+    deleteClient: false,
+  },
+  Sales_Executive: {
+    viewList: true,
+    addClient: false,
+    viewClient: true,
+    editClient: false,
+    deleteClient: false,
+  },
+  recruiter: {
+    viewList: true,
+    addClient: false,
+    viewClient: true,
+    editClient: false,
+    deleteClient: false,
+  },
+  default: {
+    viewList: true,
+    addClient: false,
+    viewClient: true,
+    editClient: false,
+    deleteClient: false,
+  },
+};
 
 export default function ClientList({ clients }: ClientListProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [windowWidth, setWindowWidth] = useState<number>(window.innerWidth);
   const router = useRouter();
+  const { roles } = useAuth();
+
+  // Determine user role with Azure AD casing
+  const userRole = roles.length > 0 
+    ? (roles.includes("Admin") 
+        ? "Admin" 
+        : roles.includes("Sales_Executive") 
+          ? "Sales_Executive" 
+          : roles.includes("Senior_Recruiter") 
+            ? "Senior_Recruiter" 
+            : roles.includes("recruiter") 
+              ? "recruiter" 
+              : "default") 
+    : "default";
 
   // Handle window resize for responsive behavior
   useEffect(() => {
@@ -49,33 +105,36 @@ export default function ClientList({ clients }: ClientListProps) {
 
   const handleView = useCallback(
     (id: number) => {
-      router.push(`/clients/${id}`);
+      if (permissions[userRole].viewClient) {
+        router.push(`/clients/${id}`);
+      }
     },
-    [router]
+    [router, userRole]
   );
 
   const handleEdit = useCallback(
     (id: number) => {
-      router.push(`/clients/${id}/edit`);
+      if (permissions[userRole].editClient) {
+        router.push(`/clients/${id}/edit`);
+      }
     },
-    [router]
+    [router, userRole]
   );
 
   const handleDelete = useCallback((id: number) => {
-    if (confirm("Are you sure you want to delete this client?")) {
+    if (permissions[userRole].deleteClient && confirm("Are you sure you want to delete this client?")) {
+      // Add delete logic here if implemented
     }
-  }, []);
+  }, [userRole]);
 
   const formatDate = (date: string | Date | null) => {
-    if (!date) return "N/A"; // Handle null or undefined
-    const parsedDate = date instanceof Date ? date : new Date(date); // Ensure it's a Date object
-    if (isNaN(parsedDate.getTime())) return "N/A"; // Handle invalid dates
-    const month = parsedDate.getMonth() + 1; // Months are zero-based
+    if (!date) return "N/A";
+    const parsedDate = date instanceof Date ? date : new Date(date);
+    if (isNaN(parsedDate.getTime())) return "N/A";
+    const month = parsedDate.getMonth() + 1;
     const day = parsedDate.getDate();
     const year = parsedDate.getFullYear();
-    return `${month.toString().padStart(2, "0")}/${day
-      .toString()
-      .padStart(2, "0")}/${year}`;
+    return `${month.toString().padStart(2, "0")}/${day.toString().padStart(2, "0")}/${year}`;
   };
 
   const columns: GridColDef[] = useMemo(
@@ -121,8 +180,7 @@ export default function ClientList({ clients }: ClientListProps) {
         flex: 1,
         minWidth: 150,
         valueGetter: (params: GridRenderCellParams<any, ClientList>) => {
-          if (!params) return "N/A"; // ✅ Null safety check
-
+          if (!params) return "N/A";
           return params;
         },
       },
@@ -151,39 +209,44 @@ export default function ClientList({ clients }: ClientListProps) {
         minWidth: 150,
         renderCell: (params: GridRenderCellParams) => (
           <Box>
-            <IconButton
-              onClick={() => handleView(params.row.clientID)}
-              size="small"
-              color="primary"
-            >
-              <VisibilityIcon />
-            </IconButton>
-            <IconButton
-              onClick={() => handleEdit(params.row.clientID)}
-              size="small"
-              color="primary"
-            >
-              <EditIcon />
-            </IconButton>
-            <IconButton
-              onClick={() => handleDelete(params.row.clientID)}
-              size="small"
-              color="error"
-            >
-              <DeleteIcon />
-            </IconButton>
+            {permissions[userRole].viewClient && (
+              <IconButton
+                onClick={() => handleView(params.row.clientID)}
+                size="small"
+                color="primary"
+              >
+                <VisibilityIcon />
+              </IconButton>
+            )}
+            {permissions[userRole].editClient && (
+              <IconButton
+                onClick={() => handleEdit(params.row.clientID)}
+                size="small"
+                color="primary"
+              >
+                <EditIcon />
+              </IconButton>
+            )}
+            {permissions[userRole].deleteClient && (
+              <IconButton
+                onClick={() => handleDelete(params.row.clientID)}
+                size="small"
+                color="error"
+              >
+                <DeleteIcon />
+              </IconButton>
+            )}
           </Box>
         ),
       },
     ],
-    [handleView, handleEdit, handleDelete, formatDate]
+    [handleView, handleEdit, handleDelete, formatDate, userRole]
   );
 
-  // 🔍 Robust Search: Supports multiple terms like "r, placed, net"
   const filteredClients = useMemo(() => {
     if (!searchTerm.trim()) return clients;
 
-    const keywords = searchTerm.toLowerCase().split(/\s+/); // Split by spaces or commas
+    const keywords = searchTerm.toLowerCase().split(/\s+/);
 
     return clients.filter((client) =>
       keywords.every((keyword) =>
@@ -235,7 +298,7 @@ export default function ClientList({ clients }: ClientListProps) {
             columnVisibilityModel={{
               enrollmentDate: windowWidth > 1200,
               techStack: windowWidth > 1000,
-              assignedRecruiterID: windowWidth > 800,
+              assignedRecruiterName: windowWidth > 800,
               totalDue: windowWidth > 600,
               totalPaid: windowWidth > 600,
             }}

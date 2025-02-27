@@ -9,11 +9,13 @@ using Backend.Interfaces;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
-using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
+using Microsoft.Graph;
+using Microsoft.Identity.Client;
+using System;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
 
 // ✅ Configure Logging
 builder.Logging.ClearProviders();
@@ -40,6 +42,34 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddScoped<IClientRepository, ClientRepository>();
 builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+
+// ✅ Register GraphServiceClient for SharePoint Integration
+builder.Services.AddScoped<GraphServiceClient>(provider =>
+{
+    var logger = provider.GetRequiredService<ILogger<GraphServiceClient>>();
+
+    var clientId = builder.Configuration["AzureAd:ClientId"];
+    var clientSecret = builder.Configuration["AzureAd:ClientSecret"];
+    var tenantId = builder.Configuration["AzureAd:TenantId"];
+
+    if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(clientSecret) || string.IsNullOrEmpty(tenantId))
+    {
+        logger.LogError("Azure AD configuration for Graph API is missing.");
+        throw new InvalidOperationException("Azure AD configuration for Graph API is missing.");
+    }
+
+    var confidentialClient = ConfidentialClientApplicationBuilder
+        .Create(clientId)
+        .WithClientSecret(clientSecret)
+        .WithAuthority(new Uri($"https://login.microsoftonline.com/{tenantId}"))
+        .Build();
+
+    var scopes = new[] { "https://graph.microsoft.com/.default" };
+
+    var tokenProvider = new TokenProvider(confidentialClient, scopes);
+    var authProvider = new BaseBearerTokenAuthenticationProvider(tokenProvider);
+    return new GraphServiceClient(authProvider);
+});
 
 // ✅ Register Services
 builder.Services.AddScoped<IClientService, ClientService>();
@@ -88,7 +118,7 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// ✅ Azure AD Authentication (Fixed)
+// ✅ Azure AD Authentication
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 var jwtAudience = builder.Configuration["Jwt:Audience"];
 
@@ -108,9 +138,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuer = true,
             ValidIssuer = jwtIssuer,
             ValidateAudience = true,
-            ValidAudiences = new[] { jwtAudience, "api://careervest-backend" },  // 🔹 Ensure both audience values are valid
+            ValidAudiences = new[] { jwtAudience, "api://careervest-backend" },
             ValidateLifetime = true,
-            RoleClaimType = "roles"  // 🔹 Ensures roles are properly recognized
+            RoleClaimType = "roles"
         };
 
         options.Events = new JwtBearerEvents
@@ -190,4 +220,11 @@ app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
 app.Run();

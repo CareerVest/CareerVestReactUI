@@ -1,10 +1,15 @@
 using Backend.Dtos;
-using Backend.Models;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
-public interface IClientService
+namespace Backend.Services
 {
-    Task<IEnumerable<ClientListDto>> GetClientsForUserAsync(string azureUserId, string role, int? supervisorId);
-    Task<ClientDetailDto?> GetClientByIdForUserAsync(int clientId, string azureUserId, string role, int? supervisorId);
-    Task UpdateClientAsync(Client client);
-    Task<string?> GetClientFileUrlAsync(int clientId, string fileType);
+    public interface IClientService
+    {
+        Task<IEnumerable<ClientListDto>> GetClientsForUserAsync(string azureUserId, string role, int? supervisorId);
+        Task<ClientDetailDto?> GetClientByIdForUserAsync(int clientId, string azureUserId, string role, int? supervisorId);
+        Task<bool> CreateClientAsync(ClientCreateDto clientDto, string azureUserId);
+        Task EditClientAsync(int id, ClientUpdateDto clientDto, string azureUserId);
+        Task<string?> GetClientFileUrlAsync(int clientId, string fileType);
+    }
 }
