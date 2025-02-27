@@ -500,3 +500,30 @@ export async function createClient(
 >>>>>>> 3e9296e (working model fo cliets view, edit, list.)
   }
 }
+
+export async function deleteClient(id: number): Promise<boolean> {
+  let token = getAccessToken();
+  console.log("🔹 Initial Access Token for Delete Client:", token);
+
+  try {
+    token = await refreshTokenIfNeeded(token);
+    const response = await axiosInstance.delete(`/api/v1/clients/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (response.status !== 204) {
+      throw new Error(`Unexpected response status: ${response.status} - ${JSON.stringify(response.data)}`);
+    }
+
+    console.log("✅ Client Deleted Successfully");
+    return true;
+  } catch (error: any) {
+    console.error(`Error deleting client (ID: ${id}):`, error.response?.data || error.message);
+    if (error.message?.includes("Token expired") || error.message?.includes("Access token is missing")) {
+      throw new Error("Authentication required. Redirecting to login...");
+    }
+    throw new Error(`Failed to delete client: ${error.response?.data?.message || error.message}`);
+  }
+}
