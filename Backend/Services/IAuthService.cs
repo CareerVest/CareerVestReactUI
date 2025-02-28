@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 using Backend.DTOs;
 using Backend.Models;
 
-namespace Backend.Interfaces
+namespace Backend.Services
 {
     public interface IAuthService
     {

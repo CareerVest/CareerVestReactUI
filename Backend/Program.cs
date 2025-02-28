@@ -17,33 +17,33 @@ using System;
 
 var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
 
-// ✅ Configure Logging
+// Configure Logging
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 builder.Logging.AddEventSourceLogger();
 
-// ✅ Configure HTTPS Redirection
+// Configure HTTPS Redirection
 builder.Services.AddHttpsRedirection(options =>
 {
     options.HttpsPort = 7070;
 });
 
-// ✅ Load Configuration
+// Load Configuration
 builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                       .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
                       .AddEnvironmentVariables();
 
-// ✅ Add DbContext
+// Add DbContext
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// ✅ Register Repositories
+// Register Repositories
 builder.Services.AddScoped<IClientRepository, ClientRepository>();
 builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 
-// ✅ Register GraphServiceClient for SharePoint Integration
+// Register GraphServiceClient for SharePoint Integration
 builder.Services.AddScoped<GraphServiceClient>(provider =>
 {
     var logger = provider.GetRequiredService<ILogger<GraphServiceClient>>();
@@ -71,13 +71,15 @@ builder.Services.AddScoped<GraphServiceClient>(provider =>
     return new GraphServiceClient(authProvider);
 });
 
-// ✅ Register Services
+// Register Services
 builder.Services.AddScoped<IClientService, ClientService>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAccessControlService, AccessControlService>();
+builder.Services.AddScoped<IEmployeeSyncService, EmployeeSyncService>(); // New: Register sync service interface
+builder.Services.AddHostedService<EmployeeSyncService>(); // New: Register background service
 
-// ✅ Add Controllers
+// Add Controllers
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -87,7 +89,7 @@ builder.Services.AddControllers()
 
 builder.Services.AddEndpointsApiExplorer();
 
-// ✅ Configure Swagger with JWT authentication
+// Configure Swagger with JWT authentication
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo { Title = "CareerVest API", Version = "v1" });
@@ -118,7 +120,7 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// ✅ Azure AD Authentication
+// Azure AD Authentication
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 var jwtAudience = builder.Configuration["Jwt:Audience"];
 
@@ -162,14 +164,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// ✅ Authorization Policies
+// Authorization Policies
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("RequireAdminRole", policy => policy.RequireRole("Admin"));
     options.AddPolicy("RequireRecruiterRole", policy => policy.RequireRole("Recruiter"));
 });
 
-// ✅ Enable CORS
+// Enable CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend",
@@ -181,14 +183,14 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// ✅ Apply Pending Migrations
+// Apply Pending Migrations
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     dbContext.Database.Migrate();
 }
 
-// ✅ Exception Handling Middleware
+// Exception Handling Middleware
 app.UseExceptionHandler(errorApp =>
 {
     errorApp.Run(async context =>
@@ -204,7 +206,7 @@ app.UseExceptionHandler(errorApp =>
     });
 });
 
-// ✅ Middleware Order
+// Middleware Order
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -220,6 +222,7 @@ app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

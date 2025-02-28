@@ -31,5 +31,10 @@ namespace Backend.Repositories
         /// Retrieves the URL of a client file (Service Agreement or Promissory Note).
         /// </summary>
         Task<string?> GetClientFileUrlAsync(int clientId, string fileType);
+
+        /// <summary>
+        /// Retrieves all clients assigned to a specific recruiter.
+        /// </summary>
+        Task<IEnumerable<Client>> GetClientsByRecruiterIdAsync(int recruiterId);
     }
 }

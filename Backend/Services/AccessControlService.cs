@@ -30,28 +30,41 @@ namespace Backend.Services
 
         public Expression<Func<T, bool>> GetFilter<T>(string role, string module, int employeeId, int? supervisorId = null) where T : class
         {
-            var permission = GetPermission(role, module);
-
-            if (typeof(T) == typeof(Client))
+            if (typeof(T) == typeof(Employee))
             {
+                return CreateEmployeeFilter(role, module, employeeId, supervisorId) as Expression<Func<T, bool>>;
+            }
+            else if (typeof(T) == typeof(Client))
+            {
+                string permission = GetPermission(role, module);
                 return CreateClientFilter(permission, employeeId, supervisorId) as Expression<Func<T, bool>>;
             }
-            // else if (typeof(T) == typeof(Employee))
-            // {
-            //     return CreateEmployeeFilter(permission, employeeId, supervisorId) as Expression<Func<T, bool>>;
-            // }
-            // else if (typeof(T) == typeof(Interview))
-            // {
-            //     return CreateInterviewFilter(permission, employeeId, supervisorId) as Expression<Func<T, bool>>;
-            // }
-            // else if (typeof(T) == typeof(MarketingActivity))
-            // {
-            //     return CreateMarketingActivityFilter(permission, employeeId, supervisorId) as Expression<Func<T, bool>>;
-            // }
-            // Add more modules as needed (Subscriptions, PostPlacements, Payments, Adjustments)
             else
             {
-                return _ => false; // Default: no access
+                return _ => false; // Default: no access for unrecognized types
+            }
+        }
+
+        private Expression<Func<Employee, bool>> CreateEmployeeFilter(string role, string module, int employeeId, int? supervisorId)
+        {
+            switch (role.ToLowerInvariant())
+            {
+                case "admin":
+                    return e => true; // Admin sees all employees
+
+                case "senior_recruiter":
+                    // Senior Recruiter sees their record and employees under their supervision
+                    return e => e.EmployeeID == employeeId || e.SupervisorID == employeeId;
+
+                case "recruiter":
+                case "sales_executive":
+                case "resume_writer":
+                case "default":
+                    // Others see only their own record
+                    return e => e.EmployeeID == employeeId;
+
+                default:
+                    return e => false; // No access by default for unrecognized roles
             }
         }
 
@@ -71,79 +84,19 @@ namespace Backend.Services
             }
         }
 
-        private Expression<Func<Employee, bool>> CreateEmployeeFilter(string permission, int employeeId, int? supervisorId)
-        {
-            switch (permission)
-            {
-                case "All":
-                    return e => true;
-                case "Team":
-                    return CreateTeamFilterForEmployees(employeeId, supervisorId);
-                case "None":
-                default:
-                    return e => false;
-            }
-        }
-
-        // private Expression<Func<Interview, bool>> CreateInterviewFilter(string permission, int employeeId, int? supervisorId)
-        // {
-        //     switch (permission)
-        //     {
-        //         case "All":
-        //             return i => true;
-        //         case "Own":
-        //             return i => i.InterviewRecruiterID == employeeId;
-        //         case "Team":
-        //             return CreateTeamFilterForInterviews(employeeId, supervisorId);
-        //         case "None":
-        //         default:
-        //             return i => false;
-        //     }
-        // }
-
-        // private Expression<Func<MarketingActivity, bool>> CreateMarketingActivityFilter(string permission, int employeeId, int? supervisorId)
-        // {
-        //     switch (permission)
-        //     {
-        //         case "All":
-        //             return m => true;
-        //         case "None":
-        //         default:
-        //             return m => false;
-        //     }
-        // }
-
         private Expression<Func<Client, bool>> CreateTeamFilterForClients(int employeeId, int? supervisorId)
         {
-            // If supervisorId is null, derive it from the employee’s record (assuming Senior Recruiter’s EmployeeID is their SupervisorID)
             if (!supervisorId.HasValue)
             {
                 var employee = _context.Employees.FirstOrDefault(e => e.EmployeeID == employeeId);
-                supervisorId = employee?.EmployeeID; // Use the employee’s own ID as their SupervisorID (for Senior Recruiters)
+                supervisorId = employee?.EmployeeID;
             }
 
             if (!supervisorId.HasValue)
-                return c => false; // No supervisor ID found, no access
+                return c => false;
 
             return c => c.AssignedRecruiterID == employeeId ||
                        _context.Employees.Any(e => e.SupervisorID == supervisorId && e.EmployeeID == c.AssignedRecruiterID);
         }
-
-        private Expression<Func<Employee, bool>> CreateTeamFilterForEmployees(int employeeId, int? supervisorId)
-        {
-            if (!supervisorId.HasValue)
-                return e => false;
-
-            return e => e.EmployeeID == employeeId || e.SupervisorID == supervisorId;
-        }
-
-        // private Expression<Func<Interview, bool>> CreateTeamFilterForInterviews(int employeeId, int? supervisorId)
-        // {
-        //     if (!supervisorId.HasValue)
-        //         return i => false;
-
-        //     return i => i.InterviewRecruiterID == employeeId || 
-        //                _context.Employees.Any(e => e.SupervisorID == supervisorId && e.EmployeeID == i.InterviewRecruiterID);
-        // }
     }
 }
