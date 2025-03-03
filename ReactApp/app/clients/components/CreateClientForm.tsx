@@ -33,10 +33,9 @@ import {
   Visibility,
   VisibilityOff,
 } from "@mui/icons-material";
-import { createClient, getRecruiters } from "../actions/clientActions";
+import { createClient } from "../actions/clientActions";
 import type {
   Client,
-  Employee,
   SubscriptionPlan,
   PostPlacementPlan,
   PaymentSchedule,
@@ -44,6 +43,9 @@ import type {
 import { styled } from "@mui/material/styles";
 import { useAuth } from "@/contexts/authContext";
 import permissions from "../../utils/permissions";
+import { getRecruiters } from "@/app/employees/actions/employeeActions";
+import { Employee } from "@/app/types/employees/employee";
+import { Recruiter } from "@/app/types/employees/recruiter";
 
 // Styled component for hidden file input
 const VisuallyHiddenInput = styled("input")({
@@ -75,7 +77,7 @@ const parseDateForState = (dateStr: string | null): Date | null => {
 export default function CreateClientForm() {
   const router = useRouter();
   const { roles } = useAuth();
-  const [recruiters, setRecruiters] = useState<Employee[]>([]);
+  const [recruiters, setRecruiters] = useState<Recruiter[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [serviceAgreementFile, setServiceAgreementFile] = useState<File | null>(

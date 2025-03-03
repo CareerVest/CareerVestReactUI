@@ -122,11 +122,12 @@ export default function EmployeeList({
   const handleEdit = useCallback(
     (id: number) => {
       if (permissions.employees[userRole].editEmployee) {
-        if (userRole === "Admin" || id === currentEmployeeId) {
-          router.push(`/employees/${id}/edit`);
-        } else {
-          alert("You do not have permission to edit this employee.");
-        }
+        router.push(`/employees/${id}/edit`);
+        // if (userRole === "Admin" || id === currentEmployeeId) {
+        //   router.push(`/employees/${id}/edit`);
+        // } else {
+        //   alert("You do not have permission to edit this employee.");
+        // }
       }
     },
     [router, userRole, currentEmployeeId]

@@ -8,6 +8,7 @@ using Microsoft.Graph;
 using Backend.Models;
 using System;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace Backend.Services
 {
@@ -43,6 +44,26 @@ namespace Backend.Services
         {
             int employeeId = await MapAzureUserIdToEmployeeId(azureUserId);
             return await _clientRepository.GetClientByIdAsync(clientId, role, employeeId, supervisorId);
+        }
+
+        public async Task<IEnumerable<ClientListDto>> GetClientsByRecruiterIdAsync(int recruiterId, string azureUserId, string role, int? supervisorId)
+        {
+            int employeeId = await MapAzureUserIdToEmployeeId(azureUserId);
+            var clients = await _clientRepository.GetClientsByRecruiterIdAsync(recruiterId, role, employeeId, supervisorId);
+            return clients.Select(c => new ClientListDto
+            {
+                ClientID = c.ClientID,
+                ClientName = c.ClientName,
+                EnrollmentDate = c.EnrollmentDate,
+                TechStack = c.TechStack,
+                ClientStatus = c.ClientStatus, // Include the status in the DTO
+                AssignedRecruiterID = c.AssignedRecruiterID,
+                AssignedRecruiterName = c.AssignedRecruiter != null
+                    ? $"{c.AssignedRecruiter.FirstName} {c.AssignedRecruiter.LastName}"
+                    : "Unassigned",
+                TotalDue = c.TotalDue,
+                TotalPaid = c.TotalPaid
+            });
         }
 
         public async Task<bool> CreateClientAsync(ClientCreateDto clientDto, string azureUserId)

@@ -138,6 +138,35 @@ namespace Backend.Repositories
                 .FirstOrDefaultAsync();
         }
 
+        public async Task<List<Client>> GetClientsByRecruiterIdAsync(int recruiterId, string role, int employeeId, int? supervisorId)
+        {
+            _logger.LogInformation($"Fetching clients assigned to recruiter {recruiterId} for user with role {role} and employee ID {employeeId}.");
+
+            try
+            {
+                // Apply role-based filter using AccessControlService
+                var filter = _accessControlService.GetFilter<Client>(role, "Clients", employeeId, supervisorId);
+
+                // Ensure the recruiterId matches the filter criteria for the current user's role
+                var query = _context.Clients
+                    .Include(c => c.AssignedRecruiter)
+                    .ThenInclude(r => r.Supervisor)
+                    .AsNoTracking()
+                    .Where(c => c.AssignedRecruiterID == recruiterId);
+
+                // Apply the role-based filter
+                query = query.Where(filter);
+
+                // Return List<Client> directly from the database
+                return await query.ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error fetching clients for recruiter {recruiterId} with role {role} and employee ID {employeeId}.");
+                throw;
+            }
+        }
+
         public async Task<Client> AddClientAsync(Client client)
         {
             _context.Clients.Add(client);
@@ -211,26 +240,6 @@ namespace Backend.Repositories
             await _context.SaveChangesAsync();
             _logger.LogInformation($"Client {clientId} marked as inactive by user {azureUserId}.");
             return true;
-        }
-
-        /// <summary>
-        /// Retrieves all clients assigned to a specific recruiter.
-        /// </summary>
-        public async Task<IEnumerable<Client>> GetClientsByRecruiterIdAsync(int recruiterId)
-        {
-            _logger.LogInformation($"Fetching clients assigned to recruiter {recruiterId}.");
-            try
-            {
-                return await _context.Clients
-                    .Include(c => c.AssignedRecruiter)
-                    .Where(c => c.AssignedRecruiterID == recruiterId)
-                    .ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Error fetching clients for recruiter {recruiterId}.");
-                throw;
-            }
         }
     }
 }

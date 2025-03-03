@@ -172,12 +172,12 @@ namespace Backend.Services
             }
         }
 
-        public async Task<bool> InactivateEmployeeAsync(int employeeId, string azureUserId)
+        public async Task<bool> InactivateEmployeeAsync(int employeeId, string azureUserId, string role, int? supervisorId)
         {
             _logger.LogInformation("Marking employee {EmployeeId} as inactive for user {AzureUserId}", employeeId, azureUserId);
             try
             {
-                var role = (await _employeeRepository.GetEmployeeByAzureIdAsync(azureUserId))?.Role;
+                //var role = (await _employeeRepository.GetEmployeeByAzureIdAsync(azureUserId))?.Role;
                 // if (role != "Admin")
                 // {
                 //     _logger.LogWarning($"User {azureUserId} (Role: {role}) attempted to mark employee {employeeId} as inactive without Admin role.");
@@ -192,11 +192,10 @@ namespace Backend.Services
                 }
 
                 // Step 1: Reassign clients assigned to this employee (if they are a recruiter)
-                var clientsAssigned = await _clientRepository.GetClientsByRecruiterIdAsync(employeeId);
+                var clientsAssigned = await _clientRepository.GetClientsByRecruiterIdAsync(employeeId, role,employeeId, supervisorId);
                 if (clientsAssigned != null && clientsAssigned.Any())
                 {
-                    int? supervisorId = employee.SupervisorID;
-                    if (supervisorId == null)
+                    if (employee.SupervisorID == null)
                     {
                         _logger.LogWarning($"Employee {employeeId} has clients but no supervisor to reassign to.");
                         throw new InvalidOperationException("Cannot mark employee as inactive with assigned clients without a supervisor.");
@@ -214,8 +213,7 @@ namespace Backend.Services
                 var subordinates = await _employeeRepository.GetEmployeesBySupervisorIdAsync(employeeId);
                 if (subordinates != null && subordinates.Any())
                 {
-                    int? supervisorId = employee.SupervisorID;
-                    if (supervisorId == null)
+                    if (employee.SupervisorID == null)
                     {
                         _logger.LogWarning($"Employee {employeeId} has subordinates but no supervisor to reassign to.");
                         throw new InvalidOperationException("Cannot mark employee as inactive with subordinates without a supervisor.");

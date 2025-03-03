@@ -135,7 +135,7 @@ namespace Backend.Controllers
         {
             var azureUserId = User.FindFirstValue("http://schemas.microsoft.com/identity/claims/objectidentifier");
             var role = User.FindFirstValue(ClaimTypes.Role);
-
+            var supervisorId = User.FindFirstValue("SupervisorID");
             if (role != "Admin")
             {
                 _logger.LogWarning($"User {azureUserId} (Role: {role}) attempted to mark employee {id} as inactive without Admin role.");
@@ -144,7 +144,7 @@ namespace Backend.Controllers
 
             try
             {
-                var success = await _employeeService.InactivateEmployeeAsync(id, azureUserId);
+                var success = await _employeeService.InactivateEmployeeAsync(id, azureUserId, role, supervisorId != null ? int.Parse(supervisorId) : (int?)null);
                 if (!success)
                 {
                     return NotFound("Employee not found or unauthorized.");

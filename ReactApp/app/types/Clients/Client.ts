@@ -43,11 +43,11 @@ export interface PaymentSchedule {
   updatedBy: string | null;
 }
 
-export interface Employee {
-  employeeID: number;
-  firstName: string;
-  lastName: string;
-}
+// export interface Employee {
+//   employeeID: number;
+//   firstName: string;
+//   lastName: string;
+// }
 
 export interface SubscriptionPlan {
   subscriptionPlanID: number;

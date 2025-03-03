@@ -20,5 +20,6 @@ namespace Backend.Data
         public DbSet<SubscriptionPlan> SubscriptionPlan { get; set; }
         public DbSet<PostPlacementPlan> PostPlacementPlan { get; set; }
         public DbSet<PaymentSchedule> PaymentSchedules { get; set; }
+        public DbSet<Interview> Interviews { get; set; }
     }
 }

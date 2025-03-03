@@ -63,6 +63,29 @@ namespace Backend.Controllers.Api
         }
 
         /// <summary>
+        /// Retrieves all clients assigned to a specific recruiter, applying role-based filters as defined in RolePermissions.
+        /// </summary>
+        /// <param name="recruiterId">The ID of the recruiter whose clients are to be retrieved</param>
+        /// <returns>A list of clients assigned to the recruiter, filtered by user role and permissions</returns>
+        [HttpGet("byrecruiter/{recruiterId}")]
+        public async Task<ActionResult<IEnumerable<ClientListDto>>> GetClientsByRecruiterId(int recruiterId)
+        {
+            var azureUserId = User.FindFirstValue("http://schemas.microsoft.com/identity/claims/objectidentifier");
+            var role = User.FindFirstValue(ClaimTypes.Role);
+            var supervisorId = User.FindFirstValue("SupervisorID");
+
+            if (string.IsNullOrEmpty(role))
+            {
+                _logger.LogWarning($"User {azureUserId} attempted to access clients by recruiter without a valid role.");
+                return Unauthorized("User role is required.");
+            }
+
+            // Delegate permission checking and filtering to the service/repository
+            var clients = await _clientService.GetClientsByRecruiterIdAsync(recruiterId, azureUserId, role, supervisorId != null ? int.Parse(supervisorId) : (int?)null);
+            return Ok(clients);
+        }
+
+        /// <summary>
         /// Creates a new client with associated files and plans.
         /// </summary>
         /// <param name="clientCreateDto">Client data including nested plans and schedules</param>

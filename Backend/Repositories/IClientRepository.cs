@@ -18,6 +18,11 @@ namespace Backend.Repositories
         Task<ClientDetailDto?> GetClientByIdAsync(int clientId, string role, int employeeId, int? supervisorId);
 
         /// <summary>
+        /// Retrieves all clients assigned to a specific recruiter, applying role-based filters.
+        /// </summary>
+        Task<List<Client>> GetClientsByRecruiterIdAsync(int recruiterId, string role, int employeeId, int? supervisorId);
+
+        /// <summary>
         /// Adds a new client entity to the database, including related entities.
         /// </summary>
         Task<Client> AddClientAsync(Client client);
@@ -31,10 +36,5 @@ namespace Backend.Repositories
         /// Retrieves the URL of a client file (Service Agreement or Promissory Note).
         /// </summary>
         Task<string?> GetClientFileUrlAsync(int clientId, string fileType);
-
-        /// <summary>
-        /// Retrieves all clients assigned to a specific recruiter.
-        /// </summary>
-        Task<IEnumerable<Client>> GetClientsByRecruiterIdAsync(int recruiterId);
     }
 }

@@ -100,7 +100,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           }
           localStorage.setItem("isAuthenticated", "true");
           localStorage.setItem("user", JSON.stringify(activeAccount));
-          extractRoles(tokenResponse.accessToken);
+          extractRoles(tokenResponse.accessToken); // This will now store roles in localStorage
           setUser(activeAccount);
           setIsAuthenticated(true);
           console.log("🔹 Authentication State Set:", { isAuthenticated: true, user: activeAccount });
@@ -118,7 +118,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
                   scopes: tokenRequest.scopes,
                 });
                 localStorage.setItem("accessToken", tokenResponse.accessToken);
-                extractRoles(tokenResponse.accessToken);
+                extractRoles(tokenResponse.accessToken); // This will now store roles in localStorage
                 setUser(storedUser);
                 setIsAuthenticated(true);
               } catch (error) {
@@ -128,6 +128,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
                 localStorage.removeItem("isAuthenticated");
                 localStorage.removeItem("user");
                 localStorage.removeItem("accessToken");
+                localStorage.removeItem("roles"); // Clear roles if auth fails
               }
             } else {
               console.log("🔹 No Valid User in LocalStorage, Setting Unauthenticated...");
@@ -136,6 +137,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
               localStorage.removeItem("isAuthenticated");
               localStorage.removeItem("user");
               localStorage.removeItem("accessToken");
+              localStorage.removeItem("roles"); // Clear roles
             }
           } else {
             console.log("🔹 No Accounts Found in Cache or LocalStorage, Setting Unauthenticated...");
@@ -144,6 +146,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
             localStorage.removeItem("isAuthenticated");
             localStorage.removeItem("user");
             localStorage.removeItem("accessToken");
+            localStorage.removeItem("roles"); // Clear roles
           }
         }
       } catch (error) {
@@ -154,6 +157,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         localStorage.removeItem("isAuthenticated");
         localStorage.removeItem("user");
         localStorage.removeItem("accessToken");
+        localStorage.removeItem("roles"); // Clear roles on error
       }
 
       setIsInitialized(true);
@@ -168,10 +172,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     try {
       const decoded: any = jwtDecode(token);
       console.log("🔹 Decoded Token:", decoded);
-      setRoles(decoded.roles || []);
+      const tokenRoles = decoded.roles || [];
+      localStorage.setItem("roles", JSON.stringify(tokenRoles)); // Store roles in localStorage
+      setRoles(tokenRoles);
     } catch (error) {
       console.error("Failed to extract roles from token:", error);
       setRoles([]);
+      localStorage.removeItem("roles"); // Clear roles on error
     }
   };
 
@@ -216,8 +223,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       localStorage.setItem("jwtToken", loginResponse.idToken);
       localStorage.setItem("isAuthenticated", "true");
       localStorage.setItem("user", JSON.stringify(account)); // Persist user data
+      extractRoles(tokenResponse.accessToken); // This will store roles in localStorage
 
-      extractRoles(tokenResponse.accessToken);
       setIsAuthenticated(true);
       setUser(account);
 

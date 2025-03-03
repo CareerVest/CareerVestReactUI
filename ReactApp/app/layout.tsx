@@ -9,8 +9,9 @@ import Sidebar from "./sharedComponents/sidebar";
 import { InactivityTimeoutProvider } from "../contexts/inactivityTimeoutContext";
 import { useInactivityTimeoutHook } from "../hooks/useInactivityTimout";
 import { InactivityWarning } from "./sharedComponents/inactivityWarning";
-import { AuthProvider } from "../contexts/authContext";
+import { AuthProvider } from "../contexts/authContext"; // Removed useAuth import
 import "../styles/globals.css"; // ✅ Ensure styles are imported globally
+import permissions from "./utils/permissions"; // Import for Sidebar
 
 const InactivityWrapper: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -31,6 +32,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   const isLoginPage = pathname === "/login";
 
+  // Derive userRole from localStorage instead of useAuth
+  const [userRole, setUserRole] = useState<string>("default");
+
   useEffect(() => {
     const checkAuth = () => {
       const auth = localStorage.getItem("isAuthenticated") === "true";
@@ -39,6 +43,27 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       // Redirect to login if not authenticated and not already on login page
       if (!auth && !isLoginPage) {
         router.replace("/login");
+      }
+
+      // Derive userRole from localStorage or roles if available
+      const storedRoles = localStorage.getItem("roles");
+      if (storedRoles) {
+        const roles = JSON.parse(storedRoles) as string[];
+        setUserRole(
+          roles.length > 0
+            ? (roles.includes("Admin")
+                ? "Admin"
+                : roles.includes("Sales_Executive")
+                  ? "Sales_Executive"
+                  : roles.includes("Senior_Recruiter")
+                    ? "Senior_Recruiter"
+                    : roles.includes("recruiter")
+                      ? "recruiter"
+                      : roles.includes("Resume_Writer")
+                        ? "Resume_Writer"
+                        : "default")
+            : "default"
+        );
       }
     };
 
@@ -71,8 +96,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 children
               ) : (
                 <InactivityWrapper>
-                  <Box sx={{ minHeight: "100vh"}}>
-                  {isAuthenticated && <Sidebar/>}
+                  <Box sx={{ minHeight: "100vh" }}>
+                    {isAuthenticated && <Sidebar permissions={permissions} userRole={userRole} />}
                     <Box
                       component="main"
                       sx={{

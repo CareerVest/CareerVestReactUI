@@ -3,7 +3,7 @@ using Backend.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Backend.Interfaces
+namespace Backend.Services
 {
     public interface IEmployeeRepository
     {

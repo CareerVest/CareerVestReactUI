@@ -12,7 +12,7 @@ namespace Backend.Services
         Task<bool> CreateEmployeeAsync(EmployeeCreateDto employeeDto, string azureUserId);
         Task UpdateEmployeeAsync(int id, EmployeeUpdateDto employeeDto, string azureUserId);
         Task<List<RecruiterDTO>> GetRecruitersAsync();
-        Task<bool> InactivateEmployeeAsync(int employeeId, string azureUserId);
+        Task<bool> InactivateEmployeeAsync(int employeeId, string azureUserId, string role, int? supervisorId);
         Task<int> GetEmployeeIdByAzureIdAsync(string azureUserId);
     }
 }

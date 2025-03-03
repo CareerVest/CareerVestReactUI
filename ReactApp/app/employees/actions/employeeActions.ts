@@ -1,6 +1,7 @@
 import { Employee } from "@/app/types/employees/employee";
 import { EmployeeDetail } from "@/app/types/employees/employeeDetail";
 import { EmployeeList } from "@/app/types/employees/employeeList";
+import { Recruiter } from "@/app/types/employees/recruiter";
 import axiosInstance from "@/app/utils/axiosInstance";
 import { jwtDecode } from "jwt-decode";
 
@@ -382,6 +383,40 @@ export async function inactivateEmployee(id: number): Promise<boolean> {
     }
     throw new Error(
       `Failed to mark employee as inactive: ${
+        error.response?.data?.message || error.message
+      }`
+    );
+  }
+}
+
+interface RecruitersResponse {
+  $id: string;
+  $values: Recruiter[];
+}
+
+export async function getRecruiters(): Promise<RecruitersResponse> {
+  let token = getAccessToken();
+  console.log("🔹 Initial Access Token for Recruiters Fetch:", token);
+
+  try {
+    token = await refreshTokenIfNeeded(token);
+    const response = await axiosInstance.get("/api/v1/employees/recruiters", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return response.data;
+  } catch (error: any) {
+    console.error("Error fetching recruiters:", error);
+    if (
+      error.message?.includes("Token expired") ||
+      error.message?.includes("Access token is missing")
+    ) {
+      throw new Error("Authentication required. Redirecting to login...");
+    }
+    throw new Error(
+      `Failed to fetch recruiters: ${
         error.response?.data?.message || error.message
       }`
     );

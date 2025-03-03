@@ -12,6 +12,7 @@ interface ClientPermissions {
   viewClient: boolean;
   editClient: boolean;
   deleteClient: boolean;
+  [key: string]: boolean | PermissionSection; // Added index signature
 }
 
 interface EmployeePermissions {
@@ -20,12 +21,22 @@ interface EmployeePermissions {
   viewEmployee: boolean;
   editEmployee: boolean;
   deleteEmployee: boolean;
+  [key: string]: boolean | PermissionSection; // Added index signature
 }
 
-interface AppPermissions {
+interface InterviewPermissions {
+  basicInfo: PermissionSection; // Optional, can include view/edit for specific fields if needed
+  addInterview: boolean;
+  viewInterview: boolean;
+  editInterview: boolean;
+  deleteInterview: boolean;
+  [key: string]: boolean | PermissionSection; // Added index signature
+}
+
+export interface AppPermissions {
   clients: Record<string, ClientPermissions>;
   employees: Record<string, EmployeePermissions>;
-  interviews: Record<string, any>;
+  interviews: Record<string, InterviewPermissions>;
 }
 
 const permissions: AppPermissions = {
@@ -138,7 +149,50 @@ const permissions: AppPermissions = {
       deleteEmployee: false,
     },
   },
-  interviews: {},
+  interviews: {
+    Admin: {
+      basicInfo: { view: true, edit: true }, // Optional, can be simplified if not needed
+      addInterview: true,
+      viewInterview: true,
+      editInterview: true,
+      deleteInterview: true,
+    },
+    recruiter: {
+      basicInfo: { view: true, edit: true }, // Optional, can be simplified
+      addInterview: true,
+      viewInterview: true,
+      editInterview: true,
+      deleteInterview: true,
+    },
+    Senior_Recruiter: {
+      basicInfo: { view: true, edit: true }, // Optional, can be simplified
+      addInterview: true,
+      viewInterview: true,
+      editInterview: true,
+      deleteInterview: true,
+    },
+    Sales_Executive: {
+      basicInfo: { view: true, edit: true }, // Optional, can be simplified
+      addInterview: true,
+      viewInterview: true,
+      editInterview: true,
+      deleteInterview: true,
+    },
+    Resume_Writer: {
+      basicInfo: { view: false, edit: false }, // Optional, can be simplified
+      addInterview: false,
+      viewInterview: false,
+      editInterview: false,
+      deleteInterview: false,
+    },
+    default: {
+      basicInfo: { view: false, edit: false }, // Optional, can be simplified
+      addInterview: false,
+      viewInterview: false,
+      editInterview: false,
+      deleteInterview: false,
+    },
+  },
 };
 
 export default permissions;

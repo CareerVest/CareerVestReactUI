@@ -78,6 +78,8 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAccessControlService, AccessControlService>();
 builder.Services.AddScoped<IEmployeeSyncService, EmployeeSyncService>(); // New: Register sync service interface
 builder.Services.AddHostedService<EmployeeSyncService>(); // New: Register background service
+builder.Services.AddScoped<IInterviewRepository, InterviewRepository>();
+builder.Services.AddScoped<IInterviewService, InterviewService>();
 
 // Add Controllers
 builder.Services.AddControllers()
