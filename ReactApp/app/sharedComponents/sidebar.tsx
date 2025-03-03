@@ -24,19 +24,20 @@ import {
   ChevronRight,
   ExitToApp,
 } from "@mui/icons-material";
-import { People as InterviewIcon } from "@mui/icons-material"; // Updated icon for Interviews
+import { People as InterviewIcon } from "@mui/icons-material";
 import { BarChartIcon as OrganizationChart, DollarSign } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/authContext";
-import { AppPermissions } from "../utils/permissions"; // Import for type safety
+import { AppPermissions } from "../utils/permissions";
 
 interface SidebarProps {
   permissions: AppPermissions;
   userRole: string;
+  isCollapsed: boolean;
+  setIsCollapsed: (value: boolean) => void;
 }
 
-// Define valid permission keys for each module
 type PermissionKey =
   | "view"
   | "addClient"
@@ -53,21 +54,20 @@ type PermissionKey =
   | "deleteInterview";
 
 const menuItems = [
-  { title: "Dashboard", icon: <Speed />, path: "/", permissionKey: "view" as PermissionKey }, // Default permission, always visible
+  { title: "Dashboard", icon: <Speed />, path: "/", permissionKey: "view" as PermissionKey },
   { title: "Clients", icon: <BusinessCenter />, path: "/clients", permissionKey: "viewClient" as PermissionKey },
   { title: "Employees", icon: <Group />, path: "/employees", permissionKey: "viewEmployee" as PermissionKey },
-  { title: "Marketing Activity", icon: <TrendingUp />, path: "/marketing", permissionKey: "view" as PermissionKey }, // Placeholder
+  { title: "Marketing Activity", icon: <TrendingUp />, path: "/marketing", permissionKey: "view" as PermissionKey },
   { title: "Interviews", icon: <InterviewIcon />, path: "/interviews", permissionKey: "viewInterview" as PermissionKey },
-  { title: "Team Hierarchy", icon: <OrganizationChart />, path: "/supervisors", permissionKey: "view" as PermissionKey }, // Placeholder
-  { title: "Accounting", icon: <DollarSign />, path: "/accounting", permissionKey: "view" as PermissionKey }, // Placeholder
-  { title: "Settings", icon: <Settings />, path: "/settings", permissionKey: "view" as PermissionKey }, // Placeholder
+  { title: "Team Hierarchy", icon: <OrganizationChart />, path: "/supervisors", permissionKey: "view" as PermissionKey },
+  { title: "Accounting", icon: <DollarSign />, path: "/accounting", permissionKey: "view" as PermissionKey },
+  { title: "Settings", icon: <Settings />, path: "/settings", permissionKey: "view" as PermissionKey },
 ];
 
-export default function Sidebar({ permissions, userRole }: SidebarProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+export default function Sidebar({ permissions, userRole, isCollapsed, setIsCollapsed }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout, isAuthenticated } = useAuth(); // Removed roles, as userRole is now a prop
+  const { user, logout } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [userData, setUserData] = useState<any>(null);
 
@@ -88,9 +88,7 @@ export default function Sidebar({ permissions, userRole }: SidebarProps) {
 
   const handleLogout = () => {
     if (user) {
-      // Log out the specific active account silently without prompting
       logout();
-      // Manually redirect to login page after logout
       router.push("/login");
     }
   };
@@ -116,6 +114,8 @@ export default function Sidebar({ permissions, userRole }: SidebarProps) {
           overflowX: "hidden",
           display: "flex",
           flexDirection: "column",
+          margin: 0, // Ensure no margin
+          padding: 0, // Ensure no padding
         },
       }}
     >
@@ -148,19 +148,14 @@ export default function Sidebar({ permissions, userRole }: SidebarProps) {
 
       <List>
         {menuItems.map((item) => {
-          const module = item.title.toLowerCase(); // String type, not keyof AppPermissions
+          const module = item.title.toLowerCase();
           let hasPermission = false;
 
-          // Always show all items for Admin
           if (userRole === "Admin") {
             hasPermission = true;
-          } 
-          // Always show Dashboard for all roles
-          else if (module === "dashboard") {
+          } else if (module === "dashboard") {
             hasPermission = true;
-          }
-          // Check permissions for other modules
-          else if (module in permissions) {
+          } else if (module in permissions) {
             const permissionType = permissions[module as keyof AppPermissions];
             hasPermission = permissionType?.[userRole]?.[item.permissionKey] === true;
           }
@@ -181,7 +176,7 @@ export default function Sidebar({ permissions, userRole }: SidebarProps) {
                       },
                     }}
                   >
-                    <ListItemIcon // Ensure proper closing tag
+                    <ListItemIcon
                       sx={{
                         minWidth: 0,
                         mr: isCollapsed ? 0 : 3,
@@ -190,7 +185,7 @@ export default function Sidebar({ permissions, userRole }: SidebarProps) {
                       }}
                     >
                       {item.icon}
-                    </ListItemIcon> {/* Added closing tag */}
+                    </ListItemIcon>
                     {!isCollapsed && (
                       <ListItemText
                         primary={item.title}
@@ -218,7 +213,7 @@ export default function Sidebar({ permissions, userRole }: SidebarProps) {
                 },
               }}
             >
-              <ListItemIcon // Ensure proper closing tag
+              <ListItemIcon
                 sx={{
                   minWidth: 0,
                   mr: isCollapsed ? 0 : 3,
@@ -227,7 +222,7 @@ export default function Sidebar({ permissions, userRole }: SidebarProps) {
                 }}
               >
                 <ExitToApp />
-              </ListItemIcon> {/* Added closing tag */}
+              </ListItemIcon>
               {!isCollapsed && <ListItemText primary="Logout" sx={{ color: "white" }} />}
             </ListItemButton>
           </Tooltip>

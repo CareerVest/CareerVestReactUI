@@ -9,13 +9,11 @@ import Sidebar from "./sharedComponents/sidebar";
 import { InactivityTimeoutProvider } from "../contexts/inactivityTimeoutContext";
 import { useInactivityTimeoutHook } from "../hooks/useInactivityTimout";
 import { InactivityWarning } from "./sharedComponents/inactivityWarning";
-import { AuthProvider } from "../contexts/authContext"; // Removed useAuth import
-import "../styles/globals.css"; // ✅ Ensure styles are imported globally
-import permissions from "./utils/permissions"; // Import for Sidebar
+import { AuthProvider } from "../contexts/authContext";
+import "../styles/globals.css";
+import permissions from "./utils/permissions";
 
-const InactivityWrapper: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+const InactivityWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isWarningVisible, resetTimer } = useInactivityTimeoutHook();
 
   return (
@@ -28,11 +26,11 @@ const InactivityWrapper: React.FC<{ children: React.ReactNode }> = ({
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const isLoginPage = pathname === "/login";
 
-  // Derive userRole from localStorage instead of useAuth
   const [userRole, setUserRole] = useState<string>("default");
 
   useEffect(() => {
@@ -40,28 +38,26 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       const auth = localStorage.getItem("isAuthenticated") === "true";
       setIsAuthenticated(auth);
 
-      // Redirect to login if not authenticated and not already on login page
       if (!auth && !isLoginPage) {
         router.replace("/login");
       }
 
-      // Derive userRole from localStorage or roles if available
       const storedRoles = localStorage.getItem("roles");
       if (storedRoles) {
         const roles = JSON.parse(storedRoles) as string[];
         setUserRole(
           roles.length > 0
-            ? (roles.includes("Admin")
-                ? "Admin"
-                : roles.includes("Sales_Executive")
-                  ? "Sales_Executive"
-                  : roles.includes("Senior_Recruiter")
-                    ? "Senior_Recruiter"
-                    : roles.includes("recruiter")
-                      ? "recruiter"
-                      : roles.includes("Resume_Writer")
-                        ? "Resume_Writer"
-                        : "default")
+            ? roles.includes("Admin")
+              ? "Admin"
+              : roles.includes("Sales_Executive")
+              ? "Sales_Executive"
+              : roles.includes("Senior_Recruiter")
+              ? "Senior_Recruiter"
+              : roles.includes("recruiter")
+              ? "recruiter"
+              : roles.includes("Resume_Writer")
+              ? "Resume_Writer"
+              : "default"
             : "default"
         );
       }
@@ -75,7 +71,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     };
   }, [pathname, router]);
 
-  // **Prevent any rendering until authentication state is checked**
   if (isAuthenticated === null) {
     return (
       <html lang="en">
@@ -85,6 +80,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </html>
     );
   }
+
+  // Define sidebar widths
+  const sidebarWidthExpanded = 280;
+  const sidebarWidthCollapsed = 80;
 
   return (
     <html lang="en">
@@ -96,17 +95,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 children
               ) : (
                 <InactivityWrapper>
-                  <Box sx={{ minHeight: "100vh" }}>
-                    {isAuthenticated && <Sidebar permissions={permissions} userRole={userRole} />}
+                  <Box sx={{ minHeight: "100vh", display: "flex" }}>
+                    {isAuthenticated && (
+                      <Sidebar
+                        permissions={permissions}
+                        userRole={userRole}
+                        isCollapsed={isCollapsed}
+                        setIsCollapsed={setIsCollapsed}
+                      />
+                    )}
                     <Box
                       component="main"
                       sx={{
                         flexGrow: 1,
                         bgcolor: "background.default",
-                        width: { xs: "calc(100% - 80px)", sm: "calc(100% - 280px)" },
-                        position: "relative",
-                        left: { xs: "80px", sm: "280px" },
-                        transition: "all 0.3s ease",
+                        width: `calc(100% - ${isCollapsed ? sidebarWidthCollapsed : sidebarWidthExpanded}px)`,
+                        transition: "width 0.3s ease",
                       }}
                     >
                       {children}
