@@ -1,4 +1,5 @@
 using System;
+using Backend.Models;
 
 namespace Backend.Dtos
 {
@@ -16,5 +17,7 @@ namespace Backend.Dtos
         public string? SalesPerson { get; set; } // ✅ Flattened Sales Person Name
         public decimal TotalDue { get; set; }
         public decimal TotalPaid { get; set; }
+
+        public virtual ICollection<InterviewListDto> Interviews { get; set; } = new List<InterviewListDto>();
     }
 }

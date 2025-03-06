@@ -715,5 +715,21 @@ namespace Backend.Services
                 throw;
             }
         }
+
+        public async Task<List<ClientListDto>> GetClientsForUserWithFiltersAsync(string azureUserId, string role, int? supervisorId, FilterStateDto filters)
+        {
+            _logger.LogInformation("Fetching filtered clients for user {AzureUserId} with filters", azureUserId);
+            try
+            {
+                var employeeId = await MapAzureUserIdToEmployeeId(azureUserId);
+                var clients = await _clientRepository.GetClientsForUserWithFiltersAsync(role, employeeId, supervisorId, filters);
+                return clients.ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching filtered clients for user {AzureUserId}", azureUserId);
+                throw;
+            }
+        }
     }
 }

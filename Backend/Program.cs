@@ -80,6 +80,8 @@ builder.Services.AddScoped<IEmployeeSyncService, EmployeeSyncService>(); // New:
 builder.Services.AddHostedService<EmployeeSyncService>(); // New: Register background service
 builder.Services.AddScoped<IInterviewRepository, InterviewRepository>();
 builder.Services.AddScoped<IInterviewService, InterviewService>();
+builder.Services.AddScoped<IMarketingActivityRepository, MarketingActivityRepository>();
+builder.Services.AddScoped<IMarketingActivityService, MarketingActivityService>();
 
 // Add Controllers
 builder.Services.AddControllers()

@@ -179,16 +179,16 @@ const permissions: AppPermissions = {
       deleteInterview: true,
     },
     Resume_Writer: {
-      basicInfo: { view: false, edit: false }, // Optional, can be simplified
+      basicInfo: { view: true, edit: false }, // Optional, can be simplified
       addInterview: false,
-      viewInterview: false,
+      viewInterview: true, // Added view permission for all roles in marketing activity
       editInterview: false,
       deleteInterview: false,
     },
     default: {
-      basicInfo: { view: false, edit: false }, // Optional, can be simplified
+      basicInfo: { view: true, edit: false }, // Optional, can be simplified
       addInterview: false,
-      viewInterview: false,
+      viewInterview: true, // Added view permission for all roles in marketing activity
       editInterview: false,
       deleteInterview: false,
     },

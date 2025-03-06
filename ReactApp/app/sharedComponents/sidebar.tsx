@@ -57,7 +57,7 @@ const menuItems = [
   { title: "Dashboard", icon: <Speed />, path: "/", permissionKey: "view" as PermissionKey },
   { title: "Clients", icon: <BusinessCenter />, path: "/clients", permissionKey: "viewClient" as PermissionKey },
   { title: "Employees", icon: <Group />, path: "/employees", permissionKey: "viewEmployee" as PermissionKey },
-  { title: "Marketing Activity", icon: <TrendingUp />, path: "/marketing", permissionKey: "view" as PermissionKey },
+  { title: "Marketing Activity", icon: <TrendingUp />, path: "/marketingActivity", permissionKey: "view" as PermissionKey },
   { title: "Interviews", icon: <InterviewIcon />, path: "/interviews", permissionKey: "viewInterview" as PermissionKey },
   { title: "Team Hierarchy", icon: <OrganizationChart />, path: "/supervisors", permissionKey: "view" as PermissionKey },
   { title: "Accounting", icon: <DollarSign />, path: "/accounting", permissionKey: "view" as PermissionKey },
@@ -155,6 +155,8 @@ export default function Sidebar({ permissions, userRole, isCollapsed, setIsColla
             hasPermission = true;
           } else if (module === "dashboard") {
             hasPermission = true;
+          } else if (module === "marketing activity") {
+            hasPermission = true; // Explicitly allow "Marketing Activity" for all roles, as it's tied to "view"
           } else if (module in permissions) {
             const permissionType = permissions[module as keyof AppPermissions];
             hasPermission = permissionType?.[userRole]?.[item.permissionKey] === true;

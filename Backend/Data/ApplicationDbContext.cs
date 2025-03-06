@@ -21,5 +21,6 @@ namespace Backend.Data
         public DbSet<PostPlacementPlan> PostPlacementPlan { get; set; }
         public DbSet<PaymentSchedule> PaymentSchedules { get; set; }
         public DbSet<Interview> Interviews { get; set; }
+        public DbSet<ApplicationCount> ApplicationCounts { get; set; }
     }
 }

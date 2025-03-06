@@ -114,6 +114,7 @@ namespace Backend.Models
 
         //Ensured Payment Schedules relationship remains intact
         public virtual ICollection<PaymentSchedule> PaymentSchedules { get; set; } = new List<PaymentSchedule>();
+        public virtual ICollection<Interview> Interviews { get; set; } = new List<Interview>();
 
         public Client()
         {

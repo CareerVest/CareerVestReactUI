@@ -13,5 +13,8 @@ namespace Backend.Repositories
         Task AddInterviewAsync(Interview interview);
         Task UpdateInterviewAsync(Interview interview);
         Task InactivateInterviewAsync(Interview interview);
+
+        // New method for Marketing Activity
+        Task<List<InterviewStatsDto>> GetInterviewStatsForDateAsync(DateTime date, string role, int employeeId, int? supervisorId);
     }
 }

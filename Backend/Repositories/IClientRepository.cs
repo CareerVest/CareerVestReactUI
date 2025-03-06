@@ -36,5 +36,7 @@ namespace Backend.Repositories
         /// Retrieves the URL of a client file (Service Agreement or Promissory Note).
         /// </summary>
         Task<string?> GetClientFileUrlAsync(int clientId, string fileType);
+
+        Task<List<ClientListDto>> GetClientsForUserWithFiltersAsync(string role, int employeeId, int? supervisorId, FilterStateDto filters);
     }
 }

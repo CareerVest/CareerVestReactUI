@@ -241,5 +241,85 @@ namespace Backend.Repositories
             _logger.LogInformation($"Client {clientId} marked as inactive by user {azureUserId}.");
             return true;
         }
+
+        public async Task<List<ClientListDto>> GetClientsForUserWithFiltersAsync(string role, int employeeId, int? supervisorId, FilterStateDto filters)
+        {
+            _logger.LogInformation("Fetching filtered clients for employee {EmployeeId} with role {Role}", employeeId, role);
+            try
+            {
+                var clientFilter = _accessControlService.GetFilter<Client>(role, "Clients", employeeId, supervisorId);
+                IQueryable<Client> query = _context.Clients
+                    .Include(c => c.AssignedRecruiter)
+                    .ThenInclude(r => r.Supervisor)
+                    .Include(c => c.Interviews) // Ensure interviews are included
+                    .Where(clientFilter);
+
+                if (filters.Recruiter != "all" && !string.IsNullOrEmpty(filters.Recruiter))
+                {
+                    query = query.Where(c => c.AssignedRecruiterID.ToString() == filters.Recruiter);
+                }
+
+                var clients = await query.ToListAsync();
+
+                return clients.Select(c => MapToClientListDto(c, filters)).ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching filtered clients for employee {EmployeeId} with role {Role}", employeeId, role);
+                throw;
+            }
+        }
+
+        private ClientListDto MapToClientListDto(Client client, FilterStateDto filters)
+        {
+            var clientInterviews = client.Interviews?.AsQueryable() ?? Enumerable.Empty<Interview>().AsQueryable();
+
+            if (filters.Status != "all" && !string.IsNullOrEmpty(filters.Status))
+            {
+                clientInterviews = clientInterviews.Where(i => i.InterviewStatus == filters.Status);
+            }
+            if (filters.Type != "all" && !string.IsNullOrEmpty(filters.Type))
+            {
+                clientInterviews = clientInterviews.Where(i => i.InterviewType == filters.Type);
+            }
+            if (filters.StartDate.HasValue && filters.EndDate.HasValue)
+            {
+                clientInterviews = clientInterviews.Where(i =>
+                    i.InterviewDate.HasValue &&
+                    i.InterviewDate.Value.Date >= filters.StartDate.Value.Date &&
+                    i.InterviewDate.Value.Date <= filters.EndDate.Value.Date
+                );
+            }
+
+            return new ClientListDto
+            {
+                ClientID = client.ClientID,
+                ClientName = client.ClientName,
+                EnrollmentDate = client.EnrollmentDate,
+                TechStack = client.TechStack,
+                ClientStatus = client.ClientStatus,
+                AssignedRecruiterID = client.AssignedRecruiterID,
+                AssignedRecruiterName = client.AssignedRecruiter != null
+                    ? $"{client.AssignedRecruiter.FirstName} {client.AssignedRecruiter.LastName}"
+                    : "Unassigned",
+                TotalDue = client.TotalDue,
+                TotalPaid = client.TotalPaid,
+                Interviews = clientInterviews.Select(i => new InterviewListDto
+                {
+                    InterviewID = i.InterviewID,
+                    InterviewEntryDate = i.InterviewEntryDate,
+                    RecruiterName = i.Recruiter != null ? $"{i.Recruiter.FirstName} {i.Recruiter.LastName}" : null,
+                    InterviewDate = i.InterviewDate,
+                    InterviewStartTime = i.InterviewStartTime,
+                    InterviewEndTime = i.InterviewEndTime,
+                    ClientName = client.ClientName,
+                    InterviewType = i.InterviewType,
+                    InterviewStatus = i.InterviewStatus,
+                    CreatedDate = i.CreatedDate,
+                    ModifiedDate = i.ModifiedDate,
+                    EndClientName = i.EndClientName
+                }).ToList()
+            };
+        }
     }
 }

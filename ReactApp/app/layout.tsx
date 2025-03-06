@@ -8,21 +8,21 @@ import { theme } from "../styles/theme";
 import Sidebar from "./sharedComponents/sidebar";
 import { InactivityTimeoutProvider } from "../contexts/inactivityTimeoutContext";
 import { useInactivityTimeoutHook } from "../hooks/useInactivityTimout";
-import { InactivityWarning } from "./sharedComponents/inactivityWarning";
+// import { InactivityWarning } from "./sharedComponents/inactivityWarning";
 import { AuthProvider } from "../contexts/authContext";
-import "../styles/globals.css";
+//import "../styles/globals.css";
 import permissions from "./utils/permissions";
 
-const InactivityWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isWarningVisible, resetTimer } = useInactivityTimeoutHook();
+// const InactivityWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+//   const { isWarningVisible, resetTimer } = useInactivityTimeoutHook();
 
-  return (
-    <>
-      {children}
-      <InactivityWarning isOpen={isWarningVisible} onStayLoggedIn={resetTimer} />
-    </>
-  );
-};
+//   return (
+//     <>
+//       {children}
+//       <InactivityWarning isOpen={isWarningVisible} onStayLoggedIn={resetTimer} />
+//     </>
+//   );
+// };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -90,11 +90,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <AuthProvider>
           <ThemeProvider theme={theme}>
-            <InactivityTimeoutProvider>
+            {/* <InactivityTimeoutProvider> */}
               {isLoginPage ? (
                 children
               ) : (
-                <InactivityWrapper>
+                // <InactivityWrapper>
                   <Box sx={{ minHeight: "100vh", display: "flex" }}>
                     {isAuthenticated && (
                       <Sidebar
@@ -116,9 +116,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                       {children}
                     </Box>
                   </Box>
-                </InactivityWrapper>
+                // </InactivityWrapper>
               )}
-            </InactivityTimeoutProvider>
+            {/* </InactivityTimeoutProvider> */}
           </ThemeProvider>
         </AuthProvider>
       </body>
