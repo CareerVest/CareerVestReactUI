@@ -12,7 +12,7 @@ interface ClientPermissions {
   viewClient: boolean;
   editClient: boolean;
   deleteClient: boolean;
-  [key: string]: boolean | PermissionSection; // Added index signature
+  [key: string]: boolean | PermissionSection;
 }
 
 interface EmployeePermissions {
@@ -21,22 +21,32 @@ interface EmployeePermissions {
   viewEmployee: boolean;
   editEmployee: boolean;
   deleteEmployee: boolean;
-  [key: string]: boolean | PermissionSection; // Added index signature
+  [key: string]: boolean | PermissionSection;
 }
 
 interface InterviewPermissions {
-  basicInfo: PermissionSection; // Optional, can include view/edit for specific fields if needed
+  basicInfo: PermissionSection;
   addInterview: boolean;
   viewInterview: boolean;
   editInterview: boolean;
   deleteInterview: boolean;
-  [key: string]: boolean | PermissionSection; // Added index signature
+  [key: string]: boolean | PermissionSection;
+}
+
+interface InterviewChainPermissions {
+  basicInfo: PermissionSection;
+  addInterviewChain: boolean;
+  viewInterviewChain: boolean;
+  editInterviewChain: boolean;
+  deleteInterviewChain: boolean;
+  [key: string]: boolean | PermissionSection;
 }
 
 export interface AppPermissions {
   clients: Record<string, ClientPermissions>;
   employees: Record<string, EmployeePermissions>;
   interviews: Record<string, InterviewPermissions>;
+  interviewChains: Record<string, InterviewChainPermissions>;
 }
 
 const permissions: AppPermissions = {
@@ -114,31 +124,31 @@ const permissions: AppPermissions = {
       deleteEmployee: true,
     },
     Senior_Recruiter: {
-      basicInfo: { view: true, edit: { self: true } }, // Can edit only their own record
+      basicInfo: { view: true, edit: { self: true } },
       addEmployee: false,
-      viewEmployee: true, // Can view their own and supervised employees
-      editEmployee: true, // Can edit their own and supervised employees
+      viewEmployee: true,
+      editEmployee: true,
       deleteEmployee: false,
     },
     Sales_Executive: {
-      basicInfo: { view: true, edit: { self: true } }, // Can edit only their own record
+      basicInfo: { view: true, edit: { self: true } },
       addEmployee: false,
-      viewEmployee: true, // Can view only their own record
-      editEmployee: false, // Cannot edit others
+      viewEmployee: true,
+      editEmployee: false,
       deleteEmployee: false,
     },
     recruiter: {
-      basicInfo: { view: true, edit: { self: true } }, // Can edit only their own record
+      basicInfo: { view: true, edit: { self: true } },
       addEmployee: false,
-      viewEmployee: true, // Can view only their own record
-      editEmployee: false, // Cannot edit others
+      viewEmployee: true,
+      editEmployee: false,
       deleteEmployee: false,
     },
     Resume_Writer: {
-      basicInfo: { view: true, edit: { self: true } }, // Can edit only their own record
+      basicInfo: { view: true, edit: { self: true } },
       addEmployee: false,
-      viewEmployee: true, // Can view only their own record
-      editEmployee: false, // Cannot edit others
+      viewEmployee: true,
+      editEmployee: false,
       deleteEmployee: false,
     },
     default: {
@@ -151,46 +161,90 @@ const permissions: AppPermissions = {
   },
   interviews: {
     Admin: {
-      basicInfo: { view: true, edit: true }, // Optional, can be simplified if not needed
+      basicInfo: { view: true, edit: true },
       addInterview: true,
       viewInterview: true,
       editInterview: true,
       deleteInterview: true,
     },
     recruiter: {
-      basicInfo: { view: true, edit: true }, // Optional, can be simplified
+      basicInfo: { view: true, edit: true },
       addInterview: true,
       viewInterview: true,
       editInterview: true,
       deleteInterview: true,
     },
     Senior_Recruiter: {
-      basicInfo: { view: true, edit: true }, // Optional, can be simplified
+      basicInfo: { view: true, edit: true },
       addInterview: true,
       viewInterview: true,
       editInterview: true,
       deleteInterview: true,
     },
     Sales_Executive: {
-      basicInfo: { view: true, edit: true }, // Optional, can be simplified
+      basicInfo: { view: true, edit: true },
       addInterview: true,
       viewInterview: true,
       editInterview: true,
       deleteInterview: true,
     },
     Resume_Writer: {
-      basicInfo: { view: true, edit: false }, // Optional, can be simplified
+      basicInfo: { view: true, edit: false },
       addInterview: false,
-      viewInterview: true, // Added view permission for all roles in marketing activity
+      viewInterview: true,
       editInterview: false,
       deleteInterview: false,
     },
     default: {
-      basicInfo: { view: true, edit: false }, // Optional, can be simplified
+      basicInfo: { view: true, edit: false },
       addInterview: false,
-      viewInterview: true, // Added view permission for all roles in marketing activity
+      viewInterview: true,
       editInterview: false,
       deleteInterview: false,
+    },
+  },
+  interviewChains: {
+    Admin: {
+      basicInfo: { view: true, edit: true },
+      addInterviewChain: true,
+      viewInterviewChain: true,
+      editInterviewChain: true,
+      deleteInterviewChain: true,
+    },
+    recruiter: {
+      basicInfo: { view: true, edit: true },
+      addInterviewChain: true,
+      viewInterviewChain: true,
+      editInterviewChain: true,
+      deleteInterviewChain: true,
+    },
+    Senior_Recruiter: {
+      basicInfo: { view: true, edit: true },
+      addInterviewChain: true,
+      viewInterviewChain: true,
+      editInterviewChain: true,
+      deleteInterviewChain: true,
+    },
+    Sales_Executive: {
+      basicInfo: { view: true, edit: true },
+      addInterviewChain: true,
+      viewInterviewChain: true,
+      editInterviewChain: true,
+      deleteInterviewChain: true,
+    },
+    Resume_Writer: {
+      basicInfo: { view: true, edit: false },
+      addInterviewChain: false,
+      viewInterviewChain: true,
+      editInterviewChain: false,
+      deleteInterviewChain: false,
+    },
+    default: {
+      basicInfo: { view: true, edit: false },
+      addInterviewChain: false,
+      viewInterviewChain: true,
+      editInterviewChain: false,
+      deleteInterviewChain: false,
     },
   },
 };
