@@ -191,37 +191,5 @@ namespace Backend.Repositories
                 throw;
             }
         }
-
-        public async Task<List<InterviewStatsDto>> GetInterviewStatsForDateAsync(DateTime date, string role, int employeeId, int? supervisorId)
-        {
-            _logger.LogInformation("Fetching interview stats for date {Date} with role {Role} for employee {EmployeeId}", date, role, employeeId);
-            try
-            {
-                var filter = _accessControlService.GetFilter<Interview>(role, "Interviews", employeeId, supervisorId);
-                IQueryable<Interview> query = _context.Interviews
-                    .Where(i => i.IsActive == true && i.InterviewDate.HasValue && i.InterviewDate.Value.Date == date.Date)
-                    .Where(filter);
-
-                var interviews = await query.ToListAsync();
-
-                var stats = interviews
-                    .GroupBy(i => i.InterviewDate.Value.Date)
-                    .Select(g => new InterviewStatsDto
-                    {
-                        Date = g.Key,
-                        Screening = g.Count(i => i.InterviewType == "Screening"),
-                        Technical = g.Count(i => i.InterviewType == "Technical"),
-                        FinalRound = g.Count(i => i.InterviewType == "Final Round"),
-                        Total = g.Count()
-                    }).ToList();
-
-                return stats.Any() ? stats : new List<InterviewStatsDto> { new InterviewStatsDto { Date = date, Screening = 0, Technical = 0, FinalRound = 0, Total = 0 } };
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error fetching interview stats for date {Date} for role {Role}", date, role);
-                throw;
-            }
-        }
     }
 }

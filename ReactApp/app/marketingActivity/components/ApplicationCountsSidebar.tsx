@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { Box, Grid, TextField, Button, Typography, Paper } from "@mui/material";
-import type { MarketingClient } from "@/app/types/MarketingActivity/Marketing";
-import { fetchMarketingActivitiesForDate } from "../actions/MarketingActivityActions";
-import type { MarketingActivityCount } from "@/app/types/MarketingActivity/Marketing";
+import type {
+  MarketingClient,
+  MarketingApplicationCount,
+} from "@/app/types/MarketingActivity/Marketing";
 
 interface ApplicationCounts {
   totalManualApplications: number;
@@ -17,7 +18,7 @@ interface ApplicationCountsSidebarProps {
   onClose: () => void;
   clients: MarketingClient[];
   onSubmit: (counts: Record<string, ApplicationCounts>) => void;
-  applicationCounts?: Record<string, MarketingActivityCount>;
+  applicationCounts?: Record<string, MarketingApplicationCount>;
 }
 
 export function ApplicationCountsSidebar({
@@ -27,34 +28,30 @@ export function ApplicationCountsSidebar({
   onSubmit,
   applicationCounts = {},
 }: ApplicationCountsSidebarProps) {
-  const [applicationCountsState, setApplicationCountsState] = useState<Record<string, ApplicationCounts>>({});
+  const [applicationCountsState, setApplicationCountsState] = useState<
+    Record<string, ApplicationCounts>
+  >({});
 
   useEffect(() => {
-    const loadExistingCounts = async () => {
-      try {
-        const today = new Date().toISOString().split("T")[0];
-        const counts = await fetchMarketingActivitiesForDate(today);
-        const initialCounts = counts.reduce(
-          (acc, count) => ({
-            ...acc,
-            [count.ClientID.toString()]: {
-              totalManualApplications: count.TotalManualApplications,
-              totalEasyApplications: count.TotalEasyApplications,
-              totalReceivedInterviews: count.TotalReceivedInterviews,
-            },
-          }),
-          {} as Record<string, ApplicationCounts>
-        );
-        setApplicationCountsState(initialCounts);
-      } catch (error) {
-        console.error("Error loading existing application counts:", error);
-        setApplicationCountsState({});
-      }
-    };
-    if (isOpen) loadExistingCounts();
-  }, [isOpen]);
+    if (isOpen) {
+      const initialCounts: Record<string, ApplicationCounts> = {};
+      clients.forEach((client) => {
+        const existingCount = applicationCounts[client.clientID.toString()];
+        initialCounts[client.clientID.toString()] = {
+          totalManualApplications: existingCount?.totalManualApplications || 0,
+          totalEasyApplications: existingCount?.totalEasyApplications || 0,
+          totalReceivedInterviews: existingCount?.totalReceivedInterviews || 0,
+        };
+      });
+      setApplicationCountsState(initialCounts);
+    }
+  }, [isOpen, clients, applicationCounts]);
 
-  const handleInputChange = (clientId: string, field: keyof ApplicationCounts, value: string) => {
+  const handleInputChange = (
+    clientId: string,
+    field: keyof ApplicationCounts,
+    value: string
+  ) => {
     const numValue = Number.parseInt(value, 10) || 0;
     setApplicationCountsState((prev) => ({
       ...prev,
@@ -71,19 +68,26 @@ export function ApplicationCountsSidebar({
     onClose();
   };
 
+  if (!isOpen) return null;
+
   return (
-    <Box component="form" onSubmit={handleSubmit} sx={{ maxHeight: "70vh", overflow: "auto", pr: 1, p: 3 }}>
+    <Box
+      component="form"
+      onSubmit={handleSubmit}
+      sx={{ maxHeight: "70vh", overflow: "auto", pr: 1, p: 3 }}
+    >
       <Typography variant="h6" gutterBottom sx={{ color: "#682A53" }}>
         Enter Daily Application Counts
       </Typography>
       <Typography variant="body2" color="text.secondary" paragraph>
-        Please enter the number of applications and interviews received for each client today.
+        Please enter the number of applications and interviews received for each
+        client today.
       </Typography>
 
       <Box sx={{ mt: 3, mb: 4 }}>
         {clients.map((client) => (
           <Paper
-            key={client.id}
+            key={client.clientID}
             elevation={1}
             sx={{
               p: 3,
@@ -92,8 +96,11 @@ export function ApplicationCountsSidebar({
               border: "1px solid rgba(104, 42, 83, 0.1)",
             }}
           >
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "#682A53", mb: 2 }}>
-              {client.name}
+            <Typography
+              variant="subtitle1"
+              sx={{ fontWeight: 600, color: "#682A53", mb: 2 }}
+            >
+              {client.clientName}
             </Typography>
             <Grid container spacing={3}>
               <Grid item xs={12} sm={4}>
@@ -102,8 +109,17 @@ export function ApplicationCountsSidebar({
                   label="Manual Applications"
                   type="number"
                   InputProps={{ inputProps: { min: 0 } }}
-                  value={applicationCountsState[client.id]?.totalManualApplications || ""}
-                  onChange={(e) => handleInputChange(client.id, "totalManualApplications", e.target.value)}
+                  value={
+                    applicationCountsState[client.clientID.toString()]
+                      ?.totalManualApplications || ""
+                  }
+                  onChange={(e) =>
+                    handleInputChange(
+                      client.clientID.toString(),
+                      "totalManualApplications",
+                      e.target.value
+                    )
+                  }
                 />
               </Grid>
               <Grid item xs={12} sm={4}>
@@ -112,8 +128,17 @@ export function ApplicationCountsSidebar({
                   label="Easy Applications"
                   type="number"
                   InputProps={{ inputProps: { min: 0 } }}
-                  value={applicationCountsState[client.id]?.totalEasyApplications || ""}
-                  onChange={(e) => handleInputChange(client.id, "totalEasyApplications", e.target.value)}
+                  value={
+                    applicationCountsState[client.clientID.toString()]
+                      ?.totalEasyApplications || ""
+                  }
+                  onChange={(e) =>
+                    handleInputChange(
+                      client.clientID.toString(),
+                      "totalEasyApplications",
+                      e.target.value
+                    )
+                  }
                 />
               </Grid>
               <Grid item xs={12} sm={4}>
@@ -122,8 +147,17 @@ export function ApplicationCountsSidebar({
                   label="Received Interviews"
                   type="number"
                   InputProps={{ inputProps: { min: 0 } }}
-                  value={applicationCountsState[client.id]?.totalReceivedInterviews || ""}
-                  onChange={(e) => handleInputChange(client.id, "totalReceivedInterviews", e.target.value)}
+                  value={
+                    applicationCountsState[client.clientID.toString()]
+                      ?.totalReceivedInterviews || ""
+                  }
+                  onChange={(e) =>
+                    handleInputChange(
+                      client.clientID.toString(),
+                      "totalReceivedInterviews",
+                      e.target.value
+                    )
+                  }
                 />
               </Grid>
             </Grid>

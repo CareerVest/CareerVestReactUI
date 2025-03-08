@@ -188,22 +188,6 @@ namespace Backend.Services
             };
         }
 
-        public async Task<List<InterviewStatsDto>> GetInterviewStatsForDateAsync(DateTime date, string azureUserId, int? supervisorId)
-        {
-            _logger.LogInformation("Fetching interview stats for date {Date} for user {AzureUserId}", date, azureUserId);
-            try
-            {
-                var employeeId = await GetEmployeeIdByAzureIdAsync(azureUserId);
-                var role = await GetRoleFromEmployee(employeeId); // Helper method to fetch role
-                return await _interviewRepository.GetInterviewStatsForDateAsync(date, role, employeeId, supervisorId);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error fetching interview stats for date {Date} and user {AzureUserId}", date, azureUserId);
-                throw;
-            }
-        }
-
         private async Task<string> GetRoleFromEmployee(int employeeId)
         {
             var employee = await _employeeRepository.GetEmployeeByIdAsync(employeeId);

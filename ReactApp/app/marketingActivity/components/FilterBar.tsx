@@ -11,63 +11,20 @@ import {
   FormControlLabel,
   Switch,
   TextField,
-  CircularProgress,
+  Collapse,
   SelectChangeEvent,
   List,
   ListItemButton,
   ListItemText,
-  Collapse,
 } from "@mui/material";
 import {
   Add as AddIcon,
   Assessment as AssessmentIcon,
 } from "@mui/icons-material";
-import type { FilterState } from "@/app/types/MarketingActivity/Marketing";
-import type { MarketingRecruiter } from "@/app/types/MarketingActivity/Marketing";
-
-// Helper function to shuffle array using Fisher-Yates algorithm
-const shuffleArray = (array: any[]) => {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-};
-
-// Helper function to create a pseudo-random seed from a date
-const createSeedFromDate = (date: string) => {
-  return date.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-};
-
-// Helper function to build query string
-const buildQueryString = (filters: FilterState): string => {
-  const parts: string[] = [];
-  if (filters.recruiter && filters.recruiter !== "all") {
-    parts.push(`client:${filters.recruiter}`);
-  }
-  if (filters.status && filters.status !== "all") {
-    parts.push(`status:${filters.status}`);
-  }
-  if (filters.type && filters.type !== "all") {
-    parts.push(`type:${filters.type}`);
-  }
-  if (filters.dateRange[0] && filters.dateRange[1]) {
-    const startDate = new Date(filters.dateRange[0])
-      .toISOString()
-      .split("T")[0];
-    const endDate = new Date(filters.dateRange[1]).toISOString().split("T")[0];
-    if (startDate === endDate) {
-      parts.push(startDate);
-    } else {
-      parts.push(`${startDate} to ${endDate}`);
-    }
-  }
-  if (filters.searchQuery) {
-    parts.push(filters.searchQuery);
-  }
-  return parts.length > 0 ? parts.join(" ") : "all";
-};
+import type {
+  FilterState,
+  MarketingRecruiter,
+} from "@/app/types/MarketingActivity/Marketing";
 
 interface FilterBarProps {
   filters: FilterState;
@@ -75,8 +32,8 @@ interface FilterBarProps {
   standupMode: boolean;
   onStandupModeChange: (enabled: boolean) => void;
   recruiters: MarketingRecruiter[] | undefined | null;
-  onAddInterview: () => void;
-  onOpenApplicationCounts: () => void;
+  onAddInterview?: () => void; // Made optional
+  onOpenApplicationCounts?: () => void; // Made optional
 }
 
 export function FilterBar({
@@ -88,14 +45,12 @@ export function FilterBar({
   onAddInterview,
   onOpenApplicationCounts,
 }: FilterBarProps) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(
     filters.searchQuery || ""
   );
-  const [shuffledRecruiters, setShuffledRecruiters] = useState<
-    MarketingRecruiter[] | null
-  >(null); // State for shuffled recruiters
+  const [sortedRecruiters, setSortedRecruiters] = useState<
+    MarketingRecruiter[]
+  >([]);
 
   const handleFiltersChange = useCallback(
     (newFilters: Partial<FilterState>) => {
@@ -107,44 +62,29 @@ export function FilterBar({
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(filters.searchQuery || "");
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [filters.searchQuery]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!debouncedSearchQuery.trim() && filters.quickFilters.length === 0) {
-        handleFiltersChange({
-          searchQuery: "",
-          quickFilters: [],
-        });
+      if (!filters.searchQuery && filters.quickFilters.length === 0) {
+        handleFiltersChange({ searchQuery: "", quickFilters: [] });
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [debouncedSearchQuery, filters.quickFilters, handleFiltersChange]);
+  }, [filters.searchQuery, filters.quickFilters, handleFiltersChange]);
 
-  // Shuffle recruiters daily based on the current date
+  // Sort recruiters in ascending order by name
   useEffect(() => {
     if (recruiters && recruiters.length > 0) {
-      // Use the current date to create a seed for consistent daily shuffling
-      const today = new Date().toDateString();
-      const seed = createSeedFromDate(today);
+      const sorted = [...recruiters].sort((a, b) =>
+        a.name.localeCompare(b.name)
+      );
+      setSortedRecruiters(sorted);
 
-      // Set a pseudo-random seed for Math.random
-      const originalRandom = Math.random;
-      Math.random = () => {
-        const x = Math.sin(seed) * 10000;
-        return x - Math.floor(x);
-      };
-
-      // Shuffle the recruiters array
-      const shuffled = shuffleArray(recruiters);
-      setShuffledRecruiters(shuffled);
-
-      // Restore the original Math.random
-      Math.random = originalRandom;
+      // Set the first recruiter as default if no recruiter is selected
+      if (!filters.recruiter && sorted.length > 0) {
+        handleFiltersChange({ recruiter: sorted[0].id });
+      }
+    } else {
+      setSortedRecruiters([]);
     }
-  }, [recruiters]); // Only run when recruiters change
+  }, [recruiters, filters.recruiter, handleFiltersChange]);
 
   const handleRecruiterChange = (recruiterId: string) => {
     handleFiltersChange({ recruiter: recruiterId });
@@ -182,25 +122,6 @@ export function FilterBar({
     });
   };
 
-  if (loading) {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-        }}
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (error) {
-    return <Box sx={{ p: 4, color: "red", bgcolor: "white" }}>{error}</Box>;
-  }
-
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
       {/* Standup Mode Toggle */}
@@ -216,7 +137,7 @@ export function FilterBar({
         sx={{ color: "#682A53" }}
       />
 
-      {/* Recruiter List (Scrollable List Box with Truly Unique Keys) */}
+      {/* Recruiter List (Scrollable List Box with Ascending Order) */}
       <Box
         sx={{
           maxHeight: "calc(100vh - 400px)",
@@ -226,26 +147,14 @@ export function FilterBar({
         }}
       >
         <List dense>
-          <ListItemButton
-            key="all-recruiters" // Unique key for "All Recruiters"
-            selected={filters.recruiter === "all"}
-            onClick={() => handleRecruiterChange("all")}
-            sx={{
-              borderRadius: "4px 4px 0 0", // Rounded top corners for the first item
-            }}
-          >
-            <ListItemText primary="All Recruiters" />
-          </ListItemButton>
-          {(shuffledRecruiters || []).map((recruiter, index) => (
+          {sortedRecruiters.map((recruiter, index) => (
             <ListItemButton
-              key={`recruiter-${recruiter.id || `index-${index}`}`} // Use id or fallback to index for uniqueness
+              key={`recruiter-${recruiter.id || `index-${index}`}`}
               selected={filters.recruiter === recruiter.id}
               onClick={() =>
                 handleRecruiterChange(recruiter.id || `index-${index}`)
               }
-              sx={{
-                borderRadius: 0, // No additional rounding for middle items
-              }}
+              sx={{ borderRadius: index === 0 ? "4px 4px 0 0" : 0 }}
             >
               <ListItemText
                 primary={
@@ -273,8 +182,8 @@ export function FilterBar({
             size="small"
             InputLabelProps={{ shrink: true }}
             sx={{
-              borderRadius: 2, // Rounded corners to match Kanban cards
-              border: "1px solid rgba(104, 42, 83, 0.1)", // Subtle border to match cards
+              borderRadius: 2,
+              border: "1px solid rgba(104, 42, 83, 0.1)",
             }}
           />
           <TextField
@@ -290,14 +199,14 @@ export function FilterBar({
             size="small"
             InputLabelProps={{ shrink: true }}
             sx={{
-              borderRadius: 2, // Rounded corners to match Kanban cards
-              border: "1px solid rgba(104, 42, 83, 0.1)", // Subtle border to match cards
+              borderRadius: 2,
+              border: "1px solid rgba(104, 42, 83, 0.1)",
             }}
           />
         </Box>
       </Collapse>
 
-      {/* Status Select (Searchable Dropdown) */}
+      {/* Status Select (Collapsed in Standup Mode) */}
       <Collapse in={!standupMode}>
         <FormControl fullWidth size="small">
           <InputLabel id="status-label">Status</InputLabel>
@@ -310,19 +219,17 @@ export function FilterBar({
             MenuProps={{
               PaperProps: {
                 style: {
-                  maxHeight: 200, // Scrollable height
+                  maxHeight: 200,
                   maxWidth: 200,
-                  borderRadius: 2, // Rounded corners for the dropdown menu
+                  borderRadius: 2,
                 },
               },
-              autoFocus: true, // Enables type-ahead searching
+              autoFocus: true,
             }}
             sx={{
-              borderRadius: 2, // Rounded corners for the Select component
-              border: "1px solid rgba(104, 42, 83, 0.1)", // Subtle border to match cards
-              "& .MuiSelect-select": {
-                padding: "8px 14px", // Adjust padding for consistency
-              },
+              borderRadius: 2,
+              border: "1px solid rgba(104, 42, 83, 0.1)",
+              "& .MuiSelect-select": { padding: "8px 14px" },
             }}
           >
             <MenuItem value="all">All</MenuItem>
@@ -333,7 +240,7 @@ export function FilterBar({
         </FormControl>
       </Collapse>
 
-      {/* Type Select (Searchable Dropdown) */}
+      {/* Type Select (Collapsed in Standup Mode) */}
       <Collapse in={!standupMode}>
         <FormControl fullWidth size="small">
           <InputLabel id="type-label">Type</InputLabel>
@@ -346,19 +253,17 @@ export function FilterBar({
             MenuProps={{
               PaperProps: {
                 style: {
-                  maxHeight: 200, // Scrollable height
+                  maxHeight: 200,
                   maxWidth: 200,
-                  borderRadius: 2, // Rounded corners for the dropdown menu
+                  borderRadius: 2,
                 },
               },
-              autoFocus: true, // Enables type-ahead searching
+              autoFocus: true,
             }}
             sx={{
-              borderRadius: 2, // Rounded corners for the Select component
-              border: "1px solid rgba(104, 42, 83, 0.1)", // Subtle border to match cards
-              "& .MuiSelect-select": {
-                padding: "8px 14px", // Adjust padding for consistency
-              },
+              borderRadius: 2,
+              border: "1px solid rgba(104, 42, 83, 0.1)",
+              "& .MuiSelect-select": { padding: "8px 14px" },
             }}
           >
             <MenuItem value="all">All</MenuItem>
@@ -375,7 +280,7 @@ export function FilterBar({
           variant="outlined"
           onClick={() =>
             handleFiltersChange({
-              recruiter: "all",
+              recruiter: sortedRecruiters[0]?.id || "",
               dateRange: [null, null],
               status: "all",
               type: "all",
@@ -397,8 +302,8 @@ export function FilterBar({
         </Button>
       </Collapse>
 
-      {/* Action Buttons */}
-      <Button
+      {/* Action Buttons (Commented Out) */}
+      {/* <Button
         variant="contained"
         startIcon={<AddIcon />}
         onClick={onAddInterview}
@@ -423,7 +328,7 @@ export function FilterBar({
         }}
       >
         Add Counts
-      </Button>
+      </Button> */}
     </Box>
   );
 }

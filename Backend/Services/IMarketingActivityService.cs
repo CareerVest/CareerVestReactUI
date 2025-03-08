@@ -1,14 +1,23 @@
-using Backend.Dtos;
-using System.Collections.Generic;
+using System;
 using System.Threading.Tasks;
+using Backend.Dtos;
 
 namespace Backend.Services
 {
     public interface IMarketingActivityService
     {
-        Task<List<MarketingActivityListDto>> GetMarketingActivitiesForDateAsync(DateTime date, string azureUserId, string role, int? supervisorId);
-        Task<MarketingActivityDetailDto?> GetMarketingActivityByIdAsync(int id, string azureUserId, string role, int? supervisorId);
-        Task<bool> CreateMarketingActivityAsync(MarketingActivityCreateDto marketingActivityDto, string azureUserId);
-        Task UpdateMarketingActivityAsync(int id, MarketingActivityUpdateDto marketingActivityDto, string azureUserId);
+        Task<StandupDashboardDto> GetStandupDashboardDataAsync(
+            string azureUserId,
+            string role,
+            int? supervisorId,
+            DateTime today,
+            int? recruiterId);
+
+        Task<FilteredDashboardDto> GetFilteredDashboardDataAsync(
+            string azureUserId,
+            string role,
+            int? supervisorId,
+            FilterStateDto filters,
+            DateTime date);
     }
 }

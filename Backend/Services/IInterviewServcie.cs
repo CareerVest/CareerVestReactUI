@@ -12,8 +12,5 @@ namespace Backend.Services
         Task UpdateInterviewAsync(int id, InterviewUpdateDto interviewDto, string azureUserId);
         Task<bool> DeleteInterviewAsync(int interviewId, string azureUserId);
         Task<int> GetEmployeeIdByAzureIdAsync(string azureUserId);
-
-        // New method for Marketing Activity
-        Task<List<InterviewStatsDto>> GetInterviewStatsForDateAsync(DateTime date, string azureUserId, int? supervisorId);
     }
 }
