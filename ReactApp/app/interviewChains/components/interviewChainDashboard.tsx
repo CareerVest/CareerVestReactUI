@@ -27,12 +27,14 @@ import {
   TrendingUp,
   TrendingDown,
   MoreVert,
+  Check,
+  Cancel,
 } from "@mui/icons-material";
 
 interface InterviewChainDashboardProps {
   stats: InterviewChainStats;
   recentChains: InterviewChain[];
-  onViewChain: (chainId: string) => void;
+  onViewChain: (chain: InterviewChain) => void; // Updated to accept InterviewChain
 }
 
 export default function InterviewChainDashboard({
@@ -45,10 +47,10 @@ export default function InterviewChainDashboard({
 
   const handleRefresh = () => {
     setIsRefreshing(true);
-    setTimeout(() => setIsRefreshing(false), 1000);
+    setTimeout(() => setIsRefreshing(false), 1000); // Simulate refresh; replace with actual data fetch if needed
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string | null | undefined) => {
     switch (status) {
       case "Active":
         return theme.palette.info.main;
@@ -61,8 +63,33 @@ export default function InterviewChainDashboard({
     }
   };
 
-  // Create dummy data for charts instead of using MUI X Charts
+  const getOutcomeIcon = (
+    outcome?: string | null
+  ): React.ReactElement | undefined => {
+    switch (outcome) {
+      case "Next":
+        return <Check color="info" />;
+      case "Offer":
+        return <Check color="success" />;
+      case "Rejected":
+        return <Cancel color="error" />;
+      default:
+        return undefined;
+    }
+  };
+
+  const formatDate = (date: Date | string | null) => {
+    if (!date) return "N/A";
+    const d = typeof date === "string" ? new Date(date) : date;
+    return d.toLocaleDateString();
+  };
+
   const renderPieChart = () => {
+    const total = stats.totalChains || 1; // Avoid division by zero
+    const activePercent = (stats.activeChains / total) * 100;
+    const successfulPercent = (stats.successfulChains / total) * 100;
+    const unsuccessfulPercent = (stats.unsuccessfulChains / total) * 100;
+
     return (
       <Box
         sx={{
@@ -82,20 +109,12 @@ export default function InterviewChainDashboard({
               height: "100%",
               borderRadius: "50%",
               background: `conic-gradient(
-                ${theme.palette.info.main} 0% ${
-                (stats.activeChains / stats.totalChains) * 100
-              }%, 
-                ${theme.palette.success.main} ${
-                (stats.activeChains / stats.totalChains) * 100
-              }% ${
-                ((stats.activeChains + stats.successfulChains) /
-                  stats.totalChains) *
-                100
+                ${theme.palette.info.main} 0% ${activePercent}%, 
+                ${theme.palette.success.main} ${activePercent}% ${
+                activePercent + successfulPercent
               }%, 
                 ${theme.palette.error.main} ${
-                ((stats.activeChains + stats.successfulChains) /
-                  stats.totalChains) *
-                100
+                activePercent + successfulPercent
               }% 100%
               )`,
             }}
@@ -123,6 +142,17 @@ export default function InterviewChainDashboard({
   };
 
   const renderBarChart = () => {
+    const maxHeight = 200; // Max height in pixels
+    const scaleFactor = stats.monthlyActivity.length
+      ? maxHeight /
+        Math.max(
+          ...stats.monthlyActivity.map(
+            (m) => m.active + m.successful + m.unsuccessful
+          ),
+          20
+        )
+      : 1; // Avoid division by zero, default scale
+
     return (
       <Box
         sx={{
@@ -140,7 +170,7 @@ export default function InterviewChainDashboard({
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              width: "14%",
+              width: `${90 / stats.monthlyActivity.length}%`, // Dynamic width
             }}
           >
             <Box
@@ -153,7 +183,7 @@ export default function InterviewChainDashboard({
             >
               <Box
                 sx={{
-                  height: `${(month.unsuccessful / 20) * 200}px`,
+                  height: `${month.unsuccessful * scaleFactor}px`,
                   width: "70%",
                   bgcolor: theme.palette.error.main,
                   mb: 0.5,
@@ -161,7 +191,7 @@ export default function InterviewChainDashboard({
               />
               <Box
                 sx={{
-                  height: `${(month.successful / 20) * 200}px`,
+                  height: `${month.successful * scaleFactor}px`,
                   width: "70%",
                   bgcolor: theme.palette.success.main,
                   mb: 0.5,
@@ -169,7 +199,7 @@ export default function InterviewChainDashboard({
               />
               <Box
                 sx={{
-                  height: `${(month.active / 20) * 200}px`,
+                  height: `${month.active * scaleFactor}px`,
                   width: "70%",
                   bgcolor: theme.palette.info.main,
                 }}
@@ -201,17 +231,17 @@ export default function InterviewChainDashboard({
           <IconButton
             onClick={handleRefresh}
             color="primary"
+            disabled={isRefreshing}
             sx={{
               animation: isRefreshing ? "spin 1s linear infinite" : "none",
+              "@keyframes spin": { "100%": { transform: "rotate(360deg)" } },
             }}
           >
             <Refresh />
           </IconButton>
         </Tooltip>
       </Box>
-
       <Grid container spacing={3}>
-        {/* Stats Cards */}
         <Grid item xs={12} sm={6} md={3}>
           <Card elevation={2}>
             <CardContent>
@@ -220,7 +250,7 @@ export default function InterviewChainDashboard({
               </Typography>
               <Typography variant="h4">{stats.totalChains}</Typography>
               <Typography variant="body2" sx={{ mt: 1 }}>
-                {stats.averageRounds} avg. rounds per chain
+                {stats.averageRounds.toFixed(1)} avg. rounds per chain
               </Typography>
             </CardContent>
           </Card>
@@ -242,8 +272,10 @@ export default function InterviewChainDashboard({
                   fontSize="small"
                   sx={{ mr: 0.5, color: theme.palette.success.main }}
                 />
-                {Math.round((stats.activeChains / stats.totalChains) * 100)}% of
-                total
+                {stats.totalChains
+                  ? Math.round((stats.activeChains / stats.totalChains) * 100)
+                  : 0}
+                % of total
               </Typography>
             </CardContent>
           </Card>
@@ -290,16 +322,16 @@ export default function InterviewChainDashboard({
                   fontSize="small"
                   sx={{ mr: 0.5, color: theme.palette.error.main }}
                 />
-                {Math.round(
-                  (stats.unsuccessfulChains / stats.totalChains) * 100
-                )}
+                {stats.totalChains
+                  ? Math.round(
+                      (stats.unsuccessfulChains / stats.totalChains) * 100
+                    )
+                  : 0}
                 % of total
               </Typography>
             </CardContent>
           </Card>
         </Grid>
-
-        {/* Charts */}
         <Grid item xs={12} md={8}>
           <Paper elevation={2} sx={{ p: 2, height: "100%" }}>
             <Typography variant="h6" gutterBottom>
@@ -308,7 +340,6 @@ export default function InterviewChainDashboard({
             {renderBarChart()}
           </Paper>
         </Grid>
-
         <Grid item xs={12} md={4}>
           <Paper elevation={2} sx={{ p: 2, height: "100%" }}>
             <Typography variant="h6" gutterBottom>
@@ -317,65 +348,87 @@ export default function InterviewChainDashboard({
             {renderPieChart()}
           </Paper>
         </Grid>
-
-        {/* Recent Chains */}
         <Grid item xs={12} md={6}>
           <Paper elevation={2} sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
               Recent Interview Chains
             </Typography>
             <List sx={{ maxHeight: 300, overflow: "auto" }}>
-              {recentChains.map((chain, index) => (
-                <Box key={chain.id}>
-                  {index > 0 && <Divider />}
-                  <ListItem
-                    component="button" // Explicitly set component to "button"
-                    onClick={() => onViewChain(chain.id)}
-                    secondaryAction={
-                      <IconButton edge="end" aria-label="more">
-                        <MoreVert />
-                      </IconButton>
-                    }
-                  >
-                    <Avatar
-                      sx={{ mr: 2, bgcolor: getStatusColor(chain.status) }}
+              {recentChains.map((chain, index) => {
+                const latestInterview =
+                  chain.interviews[chain.interviews.length - 1];
+                return (
+                  <Box key={chain.id}>
+                    {index > 0 && <Divider />}
+                    <ListItem
+                      component="button"
+                      onClick={() => onViewChain(chain)} // Pass full chain object
+                      secondaryAction={
+                        <IconButton edge="end" aria-label="more">
+                          <MoreVert />
+                        </IconButton>
+                      }
+                      sx={{ cursor: "pointer" }}
                     >
-                      {chain.clientName.charAt(0)}
-                    </Avatar>
-                    <ListItemText
-                      primary={
-                        <Box sx={{ display: "flex", alignItems: "center" }}>
-                          {chain.clientName}
-                          <Chip
-                            size="small"
-                            label={chain.status}
-                            sx={{
-                              ml: 1,
-                              bgcolor: getStatusColor(chain.status),
-                              color: "#fff",
-                            }}
-                          />
-                        </Box>
-                      }
-                      secondary={
-                        <>
-                          {chain.position} • {chain.interviews.length}{" "}
-                          interviews
-                          <Typography variant="caption" display="block">
-                            Last updated:{" "}
-                            {new Date(chain.updatedAt).toLocaleDateString()}
-                          </Typography>
-                        </>
-                      }
-                    />
-                  </ListItem>
-                </Box>
-              ))}
+                      <Avatar
+                        sx={{ mr: 2, bgcolor: getStatusColor(chain.status) }}
+                      >
+                        {chain.clientName?.charAt(0) || "C"}
+                      </Avatar>
+                      <ListItemText
+                        primary={
+                          <Box sx={{ display: "flex", alignItems: "center" }}>
+                            {chain.clientName || "Unknown Client"}
+                            <Chip
+                              size="small"
+                              label={chain.status || "Unknown"}
+                              sx={{
+                                ml: 1,
+                                bgcolor: getStatusColor(chain.status),
+                                color: "#fff",
+                              }}
+                            />
+                          </Box>
+                        }
+                        secondary={
+                          <>
+                            {chain.position || "Unknown Position"} •{" "}
+                            {chain.interviews.length} interviews
+                            <Typography variant="caption" display="block">
+                              Latest: {latestInterview?.Position || "N/A"} on{" "}
+                              {formatDate(latestInterview?.InterviewDate)}
+                              {latestInterview?.InterviewOutcome && (
+                                <Chip
+                                  size="small"
+                                  label={latestInterview.InterviewOutcome}
+                                  icon={getOutcomeIcon(
+                                    latestInterview.InterviewOutcome
+                                  )}
+                                  sx={{ ml: 1 }}
+                                  color={
+                                    latestInterview.InterviewOutcome === "Offer"
+                                      ? "success"
+                                      : latestInterview.InterviewOutcome ===
+                                        "Rejected"
+                                      ? "error"
+                                      : "info"
+                                  }
+                                />
+                              )}
+                            </Typography>
+                            <Typography variant="caption" display="block">
+                              Last updated: {formatDate(chain.updatedAt)}
+                            </Typography>
+                          </>
+                        }
+                      />
+                    </ListItem>
+                  </Box>
+                );
+              })}
             </List>
           </Paper>
         </Grid>
-
-        {/* Top Clients */}
         <Grid item xs={12} md={6}>
           <Paper elevation={2} sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
@@ -394,9 +447,11 @@ export default function InterviewChainDashboard({
                       secondary={`${client.count} interview chains`}
                     />
                     <Chip
-                      label={`${Math.round(
-                        (client.count / stats.totalChains) * 100
-                      )}%`}
+                      label={`${
+                        stats.totalChains
+                          ? Math.round((client.count / stats.totalChains) * 100)
+                          : 0
+                      }%`}
                       size="small"
                       color="primary"
                     />

@@ -6,25 +6,19 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Box,
-  Typography,
   Button,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
+  Typography,
+  Box,
   IconButton,
   useTheme,
-  Stepper,
-  Step,
-  StepLabel,
-  FormHelperText,
 } from "@mui/material";
-import { Close, Check, Cancel, ThumbUp, Add } from "@mui/icons-material";
+import { Close, Check, ThumbUp, Cancel } from "@mui/icons-material";
+import { endInterviewChain } from "../actions/interviewChainActions";
+// Fix the import to use the same type definition
 import type {
-  Interview,
   InterviewChain,
+  Interview,
+  InterviewChainEnd,
 } from "@/app/types/interviewChain/interviewChain";
 
 interface EndInterviewDialogProps {
@@ -32,12 +26,17 @@ interface EndInterviewDialogProps {
   open: boolean;
   onClose: () => void;
   onSubmit: (
-    outcome: "Next" | "Rejected" | "Offer" | "AddNew",
+    chainId: string,
+    outcome: "Next" | "Rejected" | "Offer" | "AddNew" | "Edit",
     newInterview?: Partial<Interview> & {
       clientName?: string;
       position?: string;
+      recruiterName?: string;
     }
   ) => void;
+  onOpenAddInterview: () => void;
+  selectedInterview?: Interview;
+  isSubmitting?: boolean;
 }
 
 export default function EndInterviewDialog({
@@ -45,91 +44,60 @@ export default function EndInterviewDialog({
   open,
   onClose,
   onSubmit,
+  onOpenAddInterview,
+  selectedInterview,
+  isSubmitting = false,
 }: EndInterviewDialogProps) {
   const theme = useTheme();
-  const [activeStep, setActiveStep] = useState(0);
-  const [newInterview, setNewInterview] = useState<
-    Partial<Interview> & { clientName?: string; position?: string }
-  >({
-    type: "",
-    date: new Date().toISOString().split("T")[0],
-    notes: "",
-    location: "",
-    interviewer: "",
-    clientName: chain.clientName || "",
-    position: chain.position || "",
-  });
-  const [errors, setErrors] = useState({
-    type: false,
-    date: false,
-    clientName: false,
-    position: false,
-  });
+  const [loading, setLoading] = useState(false);
 
-  const handleInputChange = (
-    field: keyof (Partial<Interview> & {
-      clientName?: string;
-      position?: string;
-    }),
-    value: string
-  ) => {
-    setNewInterview((prev) => ({ ...prev, [field]: value }));
+  // Use the selectedInterview if provided, otherwise use the latest interview
+  const interviewToEnd =
+    selectedInterview || chain.interviews[chain.interviews.length - 1];
 
-    if (
-      field === "type" ||
-      field === "date" ||
-      field === "clientName" ||
-      field === "position"
-    ) {
-      setErrors((prev) => ({ ...prev, [field]: value === "" }));
+  const handleEndSubmit = async (outcome: "Next" | "Rejected" | "Offer") => {
+    if (isSubmitting || loading) return; // Prevent multiple submissions
+
+    setLoading(true);
+    try {
+      if (outcome === "Next") {
+        // Just open the add interview dialog without ending the current one
+        onOpenAddInterview();
+      } else {
+        // Create the payload with the specific interview ID
+        const payload: InterviewChainEnd = {
+          interviewChainID: interviewToEnd.InterviewChainID,
+          interviewOutcome: outcome,
+          interviewFeedback: null,
+          comments: null,
+        };
+
+        // Log the payload for debugging
+        console.log("Ending interview with payload:", payload);
+
+        // Call the API to end the interview
+        await endInterviewChain(interviewToEnd.InterviewChainID, payload);
+
+        // Call onSubmit with the specific interview ID
+        onSubmit(interviewToEnd.InterviewChainID.toString(), outcome, {});
+
+        // Close the dialog
+        onClose();
+      }
+    } catch (error) {
+      console.error("Failed to end interview:", error);
+    } finally {
+      setLoading(false);
     }
-  };
-
-  const handleSubmit = (
-    selectedOutcome: "Next" | "Rejected" | "Offer" | "AddNew" = "Next"
-  ) => {
-    const typeError = newInterview.type === "";
-    const dateError = !newInterview.date;
-    const clientNameError = newInterview.clientName === "";
-    const positionError = newInterview.position === "";
-
-    if (
-      selectedOutcome === "AddNew" &&
-      (typeError || dateError || clientNameError || positionError)
-    ) {
-      setErrors({
-        type: typeError,
-        date: dateError,
-        clientName: clientNameError,
-        position: positionError,
-      });
-      return;
-    } else if (selectedOutcome !== "AddNew" && (typeError || dateError)) {
-      setErrors({
-        type: typeError,
-        date: dateError,
-        clientName: false,
-        position: false,
-      });
-      return;
-    }
-
-    onSubmit(selectedOutcome, newInterview);
-    onClose();
-  };
-
-  const handleBack = () => {
-    setActiveStep(0);
-  };
-
-  const latestInterview = chain.interviews[chain.interviews.length - 1] || {
-    type: "",
-    date: "",
-    status: "Scheduled",
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog
+      open={open}
+      onClose={isSubmitting || loading ? undefined : onClose} // Prevent closing during submission
+      maxWidth="sm"
+      fullWidth
+    >
       <DialogTitle>
         <Box
           sx={{
@@ -138,212 +106,100 @@ export default function EndInterviewDialog({
             alignItems: "center",
           }}
         >
-          <Typography variant="h6">
-            {chain.interviews.length > 0
-              ? "End Interview"
-              : "Add New Interview"}
-          </Typography>
-          <IconButton edge="end" onClick={onClose} aria-label="close">
+          <Typography variant="h6">End Interview</Typography>
+          <IconButton
+            edge="end"
+            onClick={onClose}
+            aria-label="close"
+            disabled={isSubmitting || loading} // Disable during submission
+          >
             <Close />
           </IconButton>
         </Box>
       </DialogTitle>
-
-      <DialogContent>
-        <Box sx={{ mb: 3 }}>
+      <DialogContent
+        sx={{
+          maxHeight: "60vh",
+          overflowY: "auto",
+          padding: 2,
+          position: "relative",
+        }}
+      >
+        {(loading || isSubmitting) && (
+          <Box
+            sx={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              bgcolor: "rgba(0, 0, 0, 0.5)",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              zIndex: 1000,
+            }}
+          >
+            <Typography color="white">Processing...</Typography>
+          </Box>
+        )}
+        <Box sx={{ mb: 2 }}>
           <Typography variant="subtitle1" gutterBottom>
             {chain.clientName} - {chain.position}
           </Typography>
-          {chain.interviews.length > 0 && (
+          {interviewToEnd && (
             <Typography variant="body2" color="text.secondary">
-              Ending {latestInterview.type} interview scheduled for{" "}
-              {new Date(latestInterview.date).toLocaleDateString()}
+              Ending {interviewToEnd.Position || interviewToEnd.InterviewType}{" "}
+              interview scheduled for{" "}
+              {interviewToEnd.InterviewDate
+                ? new Date(interviewToEnd.InterviewDate).toLocaleDateString()
+                : "N/A"}
             </Typography>
           )}
         </Box>
-
-        <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
-          <Step>
-            <StepLabel>Interview Action</StepLabel>
-          </Step>
-          <Step>
-            <StepLabel>Details</StepLabel>
-          </Step>
-        </Stepper>
-
-        {activeStep === 0 && (
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              {chain.interviews.length > 0
-                ? "What was the outcome of this interview?"
-                : "Select an action"}
-            </Typography>
-
-            {chain.interviews.length > 0 ? (
-              <>
-                <Button
-                  variant="contained"
-                  color="info"
-                  startIcon={<Check />}
-                  onClick={() => {
-                    setActiveStep(1);
-                  }}
-                  fullWidth
-                  sx={{ justifyContent: "flex-start", py: 1.5 }}
-                >
-                  Proceed to Next Round
-                </Button>
-                <Button
-                  variant="contained"
-                  color="success"
-                  startIcon={<ThumbUp />}
-                  onClick={() => handleSubmit("Offer")}
-                  fullWidth
-                  sx={{ justifyContent: "flex-start", py: 1.5 }}
-                >
-                  Extend Offer
-                </Button>
-                <Button
-                  variant="contained"
-                  color="error"
-                  startIcon={<Cancel />}
-                  onClick={() => handleSubmit("Rejected")}
-                  fullWidth
-                  sx={{ justifyContent: "flex-start", py: 1.5 }}
-                >
-                  Reject Candidate
-                </Button>
-              </>
-            ) : (
-              <Button
-                variant="contained"
-                color="primary"
-                startIcon={<Add />}
-                onClick={() => {
-                  setActiveStep(1);
-                }}
-                fullWidth
-                sx={{ justifyContent: "flex-start", py: 1.5 }}
-              >
-                Add New Interview
-              </Button>
-            )}
-          </Box>
-        )}
-
-        {activeStep === 1 && (
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              {chain.interviews.length > 0
-                ? "Schedule the next interview"
-                : "Enter interview details"}
-            </Typography>
-
-            <FormControl fullWidth error={errors.clientName}>
-              <InputLabel id="client-name-label">Client Name *</InputLabel>
-              <TextField
-                label="Client Name *"
-                id="client-name-label" // Matches InputLabel's htmlFor
-                value={newInterview.clientName || ""}
-                onChange={(e) =>
-                  handleInputChange("clientName", e.target.value)
-                }
-                error={errors.clientName}
-                helperText={errors.clientName && "Client name is required"}
-              />
-            </FormControl>
-
-            <FormControl fullWidth error={errors.position}>
-              <InputLabel id="position-label">Position *</InputLabel>
-              <TextField
-                label="Position *"
-                id="position-label" // Matches InputLabel's htmlFor
-                value={newInterview.position || ""}
-                onChange={(e) => handleInputChange("position", e.target.value)}
-                error={errors.position}
-                helperText={errors.position && "Position is required"}
-              />
-            </FormControl>
-
-            <FormControl fullWidth error={errors.type}>
-              <InputLabel id="interview-type-label">
-                Interview Type *
-              </InputLabel>
-              <Select
-                labelId="interview-type-label"
-                value={newInterview.type}
-                label="Interview Type *"
-                onChange={(e) => handleInputChange("type", e.target.value)}
-              >
-                <MenuItem value="Technical">Technical</MenuItem>
-                <MenuItem value="HR">HR</MenuItem>
-                <MenuItem value="Culture Fit">Culture Fit</MenuItem>
-                <MenuItem value="System Design">System Design</MenuItem>
-                <MenuItem value="Behavioral">Behavioral</MenuItem>
-                <MenuItem value="Case Study">Case Study</MenuItem>
-                <MenuItem value="Final">Final</MenuItem>
-                <MenuItem value="Team Meeting">Team Meeting</MenuItem>
-              </Select>
-              {errors.type && (
-                <FormHelperText>Interview type is required</FormHelperText>
-              )}
-            </FormControl>
-
-            <TextField
-              label="Interview Date *"
-              type="date"
-              value={newInterview.date}
-              onChange={(e) => handleInputChange("date", e.target.value)}
-              fullWidth
-              error={errors.date}
-              helperText={errors.date && "Date is required"}
-              InputLabelProps={{ shrink: true }}
-            />
-
-            <TextField
-              label="Interviewer"
-              value={newInterview.interviewer || ""}
-              onChange={(e) => handleInputChange("interviewer", e.target.value)}
-              fullWidth
-            />
-
-            <TextField
-              label="Location"
-              value={newInterview.location || ""}
-              onChange={(e) => handleInputChange("location", e.target.value)}
-              fullWidth
-            />
-
-            <TextField
-              label="Notes"
-              value={newInterview.notes || ""}
-              onChange={(e) => handleInputChange("notes", e.target.value)}
-              fullWidth
-              multiline
-              rows={3}
-            />
-          </Box>
-        )}
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          <Typography variant="subtitle1" gutterBottom>
+            What was the outcome of this interview?
+          </Typography>
+          <Button
+            variant="contained"
+            color="info"
+            startIcon={<Check />}
+            onClick={() => handleEndSubmit("Next")}
+            fullWidth
+            sx={{ justifyContent: "flex-start", py: 1 }}
+            disabled={loading || isSubmitting}
+          >
+            Proceed to Next Round
+          </Button>
+          <Button
+            variant="contained"
+            color="success"
+            startIcon={<ThumbUp />}
+            onClick={() => handleEndSubmit("Offer")}
+            fullWidth
+            sx={{ justifyContent: "flex-start", py: 1 }}
+            disabled={loading || isSubmitting}
+          >
+            Extend Offer
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            startIcon={<Cancel />}
+            onClick={() => handleEndSubmit("Rejected")}
+            fullWidth
+            sx={{ justifyContent: "flex-start", py: 1 }}
+            disabled={loading || isSubmitting}
+          >
+            Reject Candidate
+          </Button>
+        </Box>
       </DialogContent>
-
       <DialogActions sx={{ px: 3, pb: 3 }}>
-        {activeStep === 0 ? (
-          <Button onClick={onClose}>Cancel</Button>
-        ) : (
-          <>
-            <Button onClick={handleBack}>Back</Button>
-            <Button
-              variant="contained"
-              onClick={() =>
-                handleSubmit(chain.interviews.length > 0 ? "Next" : "AddNew")
-              }
-            >
-              {chain.interviews.length > 0
-                ? "Schedule Next Interview"
-                : "Add Interview"}
-            </Button>
-          </>
-        )}
+        <Button onClick={onClose} disabled={loading || isSubmitting}>
+          Cancel
+        </Button>
       </DialogActions>
     </Dialog>
   );

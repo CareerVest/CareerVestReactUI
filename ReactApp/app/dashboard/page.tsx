@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Grid,
@@ -36,11 +36,13 @@ import {
   Legend,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
-import {
-  dummyInterviewChains,
-  dummyInterviewChainStats,
-} from "../interviewChains/dummyInterviewChainsData"; // Corrected import
 import InterviewChainDashboard from "../interviewChains/components/interviewChainDashboard";
+import type {
+  InterviewChain,
+  InterviewChainStats,
+} from "@/app/types/interviewChain/interviewChain";
+import { fetchInterviewChains } from "../interviewChains/actions/interviewChainActions";
+import { useAuth } from "@/contexts/authContext";
 
 ChartJS.register(
   CategoryScale,
@@ -52,6 +54,7 @@ ChartJS.register(
   Legend
 );
 
+// Placeholder revenue chart data (replace with real data if available)
 const chartData = {
   labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
   datasets: [
@@ -84,25 +87,115 @@ const chartOptions = {
 };
 
 export default function Dashboard() {
+  const { isAuthenticated, isInitialized, login } = useAuth();
   const [activeTab, setActiveTab] = useState(0);
+  const [chains, setChains] = useState<InterviewChain[]>([]);
+  const [stats, setStats] = useState<InterviewChainStats>({
+    totalChains: 0,
+    activeChains: 0,
+    successfulChains: 0,
+    unsuccessfulChains: 0,
+    statusBreakdown: [
+      { status: "Active", count: 0 },
+      { status: "Successful", count: 0 },
+      { status: "Unsuccessful", count: 0 },
+    ],
+    monthlyActivity: [],
+    averageRounds: 0,
+    offerRate: 0,
+    topClients: [],
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch interview chains on mount
+  useEffect(() => {
+    const initializeDashboard = async () => {
+      if (!isInitialized) return;
+
+      if (!isAuthenticated) {
+        const loginSuccess = await login();
+        if (!loginSuccess) {
+          setError("Please log in to view the dashboard.");
+          return;
+        }
+      }
+
+      setLoading(true);
+      try {
+        const fetchedChains = await fetchInterviewChains();
+        setChains(fetchedChains);
+        updateStats(fetchedChains);
+      } catch (err: any) {
+        setError(err.message || "Failed to load dashboard data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeDashboard();
+  }, [isAuthenticated, isInitialized, login]);
+
+  // Update stats based on chains
+  const updateStats = (chainsData: InterviewChain[]) => {
+    const active = chainsData.filter((c) => c.status === "Active").length;
+    const successful = chainsData.filter(
+      (c) => c.status === "Successful"
+    ).length;
+    const unsuccessful = chainsData.filter(
+      (c) => c.status === "Unsuccessful"
+    ).length;
+
+    setStats({
+      totalChains: chainsData.length,
+      activeChains: active,
+      successfulChains: successful,
+      unsuccessfulChains: unsuccessful,
+      statusBreakdown: [
+        { status: "Active", count: active },
+        { status: "Successful", count: successful },
+        { status: "Unsuccessful", count: unsuccessful },
+      ],
+      monthlyActivity: [],
+      averageRounds: 0,
+      offerRate: 0,
+      topClients: [],
+    });
+  };
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
 
   // Get recent chains for InterviewChainDashboard
-  const recentChains = [...dummyInterviewChains]
+  const recentChains = [...chains]
     .sort(
       (a, b) =>
         new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-    ) // Now works with updatedAt
+    )
     .slice(0, 5);
 
-  // Placeholder for onViewChain (you can replace this with actual navigation logic)
-  const handleViewChain = (chainId: string) => {
-    console.log(`View chain with ID: ${chainId}`);
-    // Example: router.push(`/interview-chain/search?chainId=${chainId}`);
+  // Handler for viewing a chain (replace with actual navigation if needed)
+  const handleViewChain = (chain: InterviewChain) => {
+    console.log(`View chain with ID: ${chain.id}`);
+    // Example: router.push(`/interview-chains/${chain.id}`);
   };
+
+  if (!isInitialized || loading) {
+    return (
+      <Box sx={{ p: 3, textAlign: "center" }}>
+        <Typography>Loading dashboard...</Typography>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Typography color="error">{error}</Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ p: 3, width: "100%" }}>
@@ -168,7 +261,7 @@ export default function Dashboard() {
             <Grid item xs={12} sm={6} md={3}>
               <StatCard
                 title="Total Clients"
-                value="2,543"
+                value="2,543" // Replace with real data if available
                 icon={<BusinessCenter />}
                 trend={{ value: 12, isPositive: true }}
               />
@@ -176,7 +269,7 @@ export default function Dashboard() {
             <Grid item xs={12} sm={6} md={3}>
               <StatCard
                 title="Active Employees"
-                value="1,243"
+                value="1,243" // Replace with real data if available
                 icon={<Group />}
                 trend={{ value: 8, isPositive: true }}
               />
@@ -184,7 +277,7 @@ export default function Dashboard() {
             <Grid item xs={12} sm={6} md={3}>
               <StatCard
                 title="Revenue Growth"
-                value="$45,678"
+                value="$45,678" // Replace with real data if available
                 icon={<TrendingUp />}
                 trend={{ value: 15, isPositive: true }}
               />
@@ -192,7 +285,7 @@ export default function Dashboard() {
             <Grid item xs={12} sm={6} md={3}>
               <StatCard
                 title="Active Projects"
-                value="89"
+                value="89" // Replace with real data if available
                 icon={<Speed />}
                 trend={{ value: 5, isPositive: false }}
               />
@@ -221,7 +314,7 @@ export default function Dashboard() {
 
       {activeTab === 1 && (
         <InterviewChainDashboard
-          stats={dummyInterviewChainStats}
+          stats={stats}
           recentChains={recentChains}
           onViewChain={handleViewChain}
         />

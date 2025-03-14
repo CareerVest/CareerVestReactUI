@@ -82,6 +82,8 @@ builder.Services.AddScoped<IInterviewRepository, InterviewRepository>();
 builder.Services.AddScoped<IInterviewService, InterviewService>();
 builder.Services.AddScoped<IMarketingActivityRepository, MarketingActivityRepository>();
 builder.Services.AddScoped<IMarketingActivityService, MarketingActivityService>();
+builder.Services.AddScoped<IInterviewChainService, InterviewChainService>();
+builder.Services.AddScoped<IInterviewChainRepository, InterviewChainRepository>();
 
 // Add Controllers
 builder.Services.AddControllers()

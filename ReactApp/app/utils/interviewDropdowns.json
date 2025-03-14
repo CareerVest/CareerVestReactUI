@@ -1,48 +1,37 @@
 {
-    "interviewTypes": [
-      "Technical",
-      "HR",
-      "Behavioral",
-      "Panel Interview",
-      "Take-Home Assessment",
-      "Cultural Fit",
-      "Skills Assessment",
-      "Final Round",
-      "Initial Screening",
-      "Other"
-    ],
-    "interviewMethods": [
-      "Video Call",
-      "Phone",
-      "In-person",
-      "Hybrid",
-      "Asynchronous (Recorded)",
-      "Other"
-    ],
-    "interviewStatuses": [
-      "Scheduled",
-      "Pending Confirmation",
-      "Rescheduled",
-      "No Show",
-      "Postponed",
-      "Completed",
-      "Cancelled",
-      "Failed",
-      "Declined",
-      "Offer Extended",
-      "Hired",
-      "Rejected"
-    ],
-    "interviewSupports": [
-      "None required",
-      "Technical Support",
-      "Language Support",
-      "Interpreter",
-      "Accessibility Support",
-      "Training Support",
-      "Equipment Support",
-      "Network Support",
-      "Mentoring Support",
-      "Other"
-    ]
+  "interviewTypes": ["Phone", "Technical", "HR", "Behavioral", "Final"],
+  "interviewMethods": [
+    "Video Call",
+    "Phone",
+    "In-person",
+    "Hybrid",
+    "Asynchronous (Recorded)",
+    "Other"
+  ],
+  "interviewStatuses": [
+    "Scheduled",
+    "Pending Confirmation",
+    "Rescheduled",
+    "No Show",
+    "Postponed",
+    "Completed",
+    "Cancelled",
+    "Failed",
+    "Declined",
+    "Offer Extended",
+    "Hired",
+    "Rejected"
+  ],
+  "interviewSupports": [
+    "None required",
+    "Technical Support",
+    "Language Support",
+    "Interpreter",
+    "Accessibility Support",
+    "Training Support",
+    "Equipment Support",
+    "Network Support",
+    "Mentoring Support",
+    "Other"
+  ]
 }

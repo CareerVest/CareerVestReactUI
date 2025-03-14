@@ -1,122 +1,95 @@
 "use client";
 
-import type React from "react";
-import { useState } from "react";
 import {
   Box,
-  Paper,
-  Typography,
-  TextField,
-  InputAdornment,
-  Grid,
   Card,
   CardContent,
-  CardActions,
-  Button,
   Chip,
-  IconButton,
-  Tooltip,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
-  useTheme,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Divider,
+  Fab,
+  TablePagination,
+  Tooltip,
+  Typography,
+  useTheme,
+  Zoom,
 } from "@mui/material";
-import {
-  Search,
-  GridView,
-  ViewList,
-  ArrowForward,
-  Check,
-  CalendarToday,
-  Person,
-} from "@mui/icons-material";
+import AddIcon from "@mui/icons-material/Add";
 import type {
   Interview,
   InterviewChain,
 } from "@/app/types/interviewChain/interviewChain";
+import InterviewChainSearch from "./interviewChainSearch";
 import ChainExploration from "./chainExploration";
-import EndInterviewDialog from "./endInterviewDialog";
+import { CalendarToday, Person } from "@mui/icons-material";
+import { useState } from "react";
 
 interface InterviewChainHubProps {
   chains: InterviewChain[];
+  // Update the onEndInterview prop type to match what ChainExploration expects
   onEndInterview: (
-    chainId: string,
-    outcome: "Next" | "Rejected" | "Offer" | "AddNew",
-    newInterview?: Partial<Interview> & {
-      clientName?: string;
-      position?: string;
-    }
-  ) => void;
-  onAddNewInterview: (
     chain: InterviewChain,
-    newInterview: Partial<Interview>
+    isEditing: boolean,
+    interview?: Interview
   ) => void;
+  onAddNewInterview: (chain: InterviewChain) => void;
+  onViewChain: (chain: InterviewChain) => void;
+  onCreateNewChain: () => void;
 }
 
 export default function InterviewChainHub({
   chains,
   onEndInterview,
   onAddNewInterview,
+  onViewChain,
+  onCreateNewChain,
 }: InterviewChainHubProps) {
   const theme = useTheme();
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("All");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [selectedChain, setSelectedChain] = useState<InterviewChain | null>(
     null
   );
-  const [endInterviewChain, setEndInterviewChain] =
-    useState<InterviewChain | null>(null);
 
-  // Robust search logic
   const filteredChains = chains.filter((chain) => {
-    // If no search text, include all chains (subject to status filter)
-    if (!searchText.trim()) {
-      return statusFilter === "All" || chain.status === statusFilter;
-    }
+    const searchTerms = searchText
+      .toLowerCase()
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+    const matchesStatus =
+      statusFilter === "All" || chain.status === statusFilter;
 
-    // Split search text into individual terms (e.g., "John Tech" -> ["John", "Tech"])
-    const searchTerms = searchText.toLowerCase().trim().split(/\s+/);
+    if (!searchTerms.length) return matchesStatus;
 
-    // Collect all searchable fields into a single string for matching
     const searchableFields = [
+      chain.endClientName?.toLowerCase() || "",
       chain.clientName?.toLowerCase() || "",
+      chain.recruiterName?.toLowerCase() || "",
       chain.position?.toLowerCase() || "",
-      // Include interview details
+      chain.latestInterviewStatus?.toLowerCase() || "",
+      chain.latestInterviewType?.toLowerCase() || "",
       ...chain.interviews
         .map((interview) => [
-          interview.type?.toLowerCase() || "",
-          interview.interviewer?.toLowerCase() || "",
-          interview.location?.toLowerCase() || "",
-          interview.notes?.toLowerCase() || "",
+          interview.EndClientName?.toLowerCase() || "",
+          interview.Position?.toLowerCase() || "",
+          interview.InterviewType?.toLowerCase() || "",
+          interview.InterviewSupport?.toLowerCase() || "",
+          interview.InterviewFeedback?.toLowerCase() || "",
+          interview.Comments?.toLowerCase() || "",
+          interview.CreatedBy?.toLowerCase() || "",
+          interview.UpdatedBy?.toLowerCase() || "",
         ])
         .flat(),
     ].join(" ");
 
-    // Check if ALL search terms match at least one field
     const matchesSearch = searchTerms.every((term) =>
       searchableFields.includes(term)
     );
-
-    // Apply status filter
-    const matchesStatus =
-      statusFilter === "All" || chain.status === statusFilter;
-
     return matchesSearch && matchesStatus;
   });
 
-  // Pagination
   const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);
   };
@@ -133,39 +106,11 @@ export default function InterviewChainHub({
     page * rowsPerPage + rowsPerPage
   );
 
-  // Handle chain selection
-  const handleViewChain = (chain: InterviewChain) => {
-    setSelectedChain(chain);
-  };
-
   const handleCloseChainView = () => {
     setSelectedChain(null);
   };
 
-  // Handle end interview
-  const handleOpenEndInterview = (chain: InterviewChain) => {
-    setEndInterviewChain(chain);
-  };
-
-  const handleCloseEndInterview = () => {
-    setEndInterviewChain(null);
-  };
-
-  const handleEndInterviewSubmit = (
-    outcome: "Next" | "Rejected" | "Offer" | "AddNew",
-    newInterview?: Partial<Interview> & {
-      clientName?: string;
-      position?: string;
-    }
-  ) => {
-    if (endInterviewChain) {
-      onEndInterview(endInterviewChain.id, outcome, newInterview);
-      setEndInterviewChain(null);
-    }
-  };
-
-  // Get status color
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string | null) => {
     switch (status) {
       case "Active":
         return theme.palette.info.main;
@@ -178,271 +123,204 @@ export default function InterviewChainHub({
     }
   };
 
-  // Format date
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString();
+  const formatDate = (date: Date | string | null) => {
+    if (!date) return "N/A";
+    const d = typeof date === "string" ? new Date(date) : date;
+    return d.toLocaleDateString();
   };
 
   return (
-    <Box>
-      {/* Filter Bar */}
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: 2,
-          }}
-        >
-          <TextField
-            placeholder="Search by client, position, interview type, etc..."
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            variant="outlined"
-            size="small"
-            sx={{ flexGrow: 1 }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search />
-                </InputAdornment>
-              ),
-            }}
-          />
+    <Box sx={{ overflowX: "hidden", width: "100%", boxSizing: "border-box" }}>
+      <InterviewChainSearch
+        searchText={searchText}
+        setSearchText={setSearchText}
+        statusFilter={statusFilter}
+        setStatusFilter={setStatusFilter}
+        totalChains={filteredChains.length}
+      />
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 2,
+          width: "100%",
+          overflowX: "hidden",
+          boxSizing: "border-box",
+        }}
+      >
+        {paginatedChains.map((chain) => {
+          const isSelected = selectedChain?.id === chain.id;
 
-          <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel id="status-filter-label">Status</InputLabel>
-            <Select
-              labelId="status-filter-label"
-              value={statusFilter}
-              label="Status"
-              onChange={(e) => setStatusFilter(e.target.value)}
+          return (
+            <Card
+              key={chain.id}
+              onClick={() => onViewChain(chain)}
+              sx={{
+                flex: "1 1 calc(20% - 16px)",
+                minWidth: "200px",
+                maxWidth: "calc(25% - 16px)",
+                mb: 2,
+                borderRadius: 2,
+                border: "1px solid rgba(104, 42, 83, 0.1)",
+                overflow: "visible",
+                cursor: "pointer",
+                "&:hover": { bgcolor: "rgba(104, 42, 83, 0.05)" },
+                transition: "all 0.3s ease",
+                ...(isSelected && {
+                  border: "2px solid #682A53",
+                  bgcolor: "rgba(104, 42, 83, 0.05)",
+                }),
+                boxSizing: "border-box",
+              }}
             >
-              <MenuItem value="All">All</MenuItem>
-              <MenuItem value="Active">Active</MenuItem>
-              <MenuItem value="Successful">Successful</MenuItem>
-              <MenuItem value="Unsuccessful">Unsuccessful</MenuItem>
-            </Select>
-          </FormControl>
-
-          <Tooltip title="Toggle view">
-            <Box>
-              <IconButton
-                color={viewMode === "grid" ? "primary" : "default"}
-                onClick={() => setViewMode("grid")}
-              >
-                <GridView />
-              </IconButton>
-              <IconButton
-                color={viewMode === "list" ? "primary" : "default"}
-                onClick={() => setViewMode("list")}
-              >
-                <ViewList />
-              </IconButton>
-            </Box>
-          </Tooltip>
-        </Box>
-      </Paper>
-
-      {/* Results Count */}
-      <Box sx={{ mb: 2 }}>
-        <Typography variant="body2" color="text.secondary">
-          Showing {filteredChains.length} interview chains
-          {statusFilter !== "All" && ` with status "${statusFilter}"`}
-          {searchText && ` matching "${searchText}"`}
-        </Typography>
-      </Box>
-
-      {/* Grid View */}
-      {viewMode === "grid" && (
-        <Grid container spacing={3}>
-          {paginatedChains.map((chain) => (
-            <Grid item xs={12} sm={6} md={4} key={chain.id}>
-              <Card>
-                <CardContent>
-                  <Box
+              <CardContent sx={{ p: 2 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    mb: 1,
+                  }}
+                >
+                  <Typography
+                    variant="subtitle1"
                     sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      mb: 2,
+                      color: "#682A53",
+                      fontWeight: 500,
+                      flexGrow: 1,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
                     }}
                   >
-                    <Typography variant="h6" noWrap sx={{ maxWidth: "70%" }}>
-                      {chain.clientName}
-                    </Typography>
-                    <Chip
-                      label={chain.status}
-                      size="small"
-                      sx={{
-                        bgcolor: getStatusColor(chain.status),
-                        color: "#fff",
-                      }}
-                    />
-                  </Box>
-
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    gutterBottom
-                  >
-                    {chain.position}
+                    {chain.endClientName || "Unnamed Client"}
                   </Typography>
-
-                  <Divider sx={{ my: 1.5 }} />
-
-                  <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                    <CalendarToday
-                      fontSize="small"
-                      sx={{ mr: 1, color: "text.secondary" }}
-                    />
-                    <Typography variant="body2">
-                      Last updated: {formatDate(chain.updatedAt)}
-                    </Typography>
-                  </Box>
-
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <Person
-                      fontSize="small"
-                      sx={{ mr: 1, color: "text.secondary" }}
-                    />
-                    <Typography variant="body2">
-                      {chain.rounds} interview{chain.rounds !== 1 ? "s" : ""}
-                    </Typography>
-                  </Box>
-
-                  <Box sx={{ mt: 2 }}>
-                    <Typography variant="subtitle2">
-                      Latest: {chain.latestInterview.type}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {chain.latestInterview.status} •{" "}
-                      {formatDate(chain.latestInterview.date)}
-                    </Typography>
-                  </Box>
-                </CardContent>
-
-                <CardActions>
-                  <Button size="small" onClick={() => handleViewChain(chain)}>
-                    View Details
-                  </Button>
-                  {chain.status === "Active" &&
-                    chain.latestInterview.status === "Scheduled" && (
-                      <Button
-                        size="small"
-                        color="primary"
-                        onClick={() => handleOpenEndInterview(chain)}
-                      >
-                        End Interview
-                      </Button>
-                    )}
-                </CardActions>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      )}
-
-      {/* List View */}
-      {viewMode === "list" && (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Client</TableCell>
-                <TableCell>Position</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Rounds</TableCell>
-                <TableCell>Latest Interview</TableCell>
-                <TableCell>Updated</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {paginatedChains.map((chain) => (
-                <TableRow key={chain.id} hover>
-                  <TableCell>{chain.clientName}</TableCell>
-                  <TableCell>{chain.position}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={chain.status}
-                      size="small"
-                      sx={{
-                        bgcolor: getStatusColor(chain.status),
-                        color: "#fff",
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell>{chain.rounds}</TableCell>
-                  <TableCell>
-                    <Box>
-                      <Typography variant="body2">
-                        {chain.latestInterview.type}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {chain.latestInterview.status} •{" "}
-                        {formatDate(chain.latestInterview.date)}
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell>{formatDate(chain.updatedAt)}</TableCell>
-                  <TableCell>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleViewChain(chain)}
-                    >
-                      <ArrowForward fontSize="small" />
-                    </IconButton>
-                    {chain.status === "Active" &&
-                      chain.latestInterview.status === "Scheduled" && (
-                        <IconButton
-                          size="small"
-                          color="primary"
-                          onClick={() => handleOpenEndInterview(chain)}
-                        >
-                          <Check fontSize="small" />
-                        </IconButton>
-                      )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
-
-      {/* Pagination */}
-      <TablePagination
-        component="div"
-        count={filteredChains.length}
-        page={page}
-        onPageChange={handleChangePage}
-        rowsPerPage={rowsPerPage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-        rowsPerPageOptions={[10, 25, 50]}
-      />
-
-      {/* Chain Exploration Dialog */}
+                  <Chip
+                    label={chain.status}
+                    size="small"
+                    sx={{
+                      bgcolor: getStatusColor(chain.status),
+                      color: "#fff",
+                      fontWeight: "bold",
+                      fontSize: "0.75rem",
+                      height: 20,
+                    }}
+                  />
+                </Box>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 0.5 }}
+                >
+                  Client: {chain.clientName || "N/A"}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 0.5 }}
+                >
+                  Recruiter: {chain.recruiterName || "N/A"}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 1 }}
+                >
+                  Position: {chain.position || "N/A"}
+                </Typography>
+                <Divider sx={{ my: 1 }} />
+                <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+                  <CalendarToday
+                    fontSize="small"
+                    sx={{ mr: 0.5, color: "text.secondary" }}
+                  />
+                  <Typography variant="body2">
+                    Last updated: {formatDate(chain.updatedAt)}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <Person
+                    fontSize="small"
+                    sx={{ mr: 0.5, color: "text.secondary" }}
+                  />
+                  <Typography variant="body2">
+                    {chain.rounds} interview{chain.rounds !== 1 ? "s" : ""}
+                  </Typography>
+                </Box>
+                <Box sx={{ mt: 1 }}>
+                  <Typography variant="subtitle2">
+                    Latest: {chain.latestInterviewType || "N/A"}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {chain.latestInterviewStatus || "N/A"} •{" "}
+                    {chain.latestInterviewDate
+                      ? formatDate(chain.latestInterviewDate)
+                      : "N/A"}
+                  </Typography>
+                </Box>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </Box>
+      <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
+        <TablePagination
+          component="div"
+          count={filteredChains.length}
+          page={page}
+          onPageChange={handleChangePage}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          rowsPerPageOptions={[10, 25, 50]}
+          sx={{
+            "& .MuiTablePagination-toolbar": {
+              alignItems: "center",
+              paddingRight: "80px", // Add padding to avoid overlap with FAB
+            },
+          }}
+        />
+      </Box>
       {selectedChain && (
         <ChainExploration
           chain={selectedChain}
           open={!!selectedChain}
           onClose={handleCloseChainView}
-          onEndInterview={handleOpenEndInterview}
+          // Update this to pass the chain and isEditing flag directly
+          onEndInterview={onEndInterview}
+          // Update this to pass just the chain
           onAddNewInterview={onAddNewInterview}
+          onUpdateChainStatus={(chainId, newStatus) => {
+            // Implement this if needed
+          }}
+          onEditInterview={(interview) => {
+            // Pass the selected chain, true for isEditing, and the interview
+            onEndInterview(selectedChain, true, interview);
+          }}
         />
       )}
-
-      {/* End Interview Dialog */}
-      {endInterviewChain && (
-        <EndInterviewDialog
-          chain={endInterviewChain}
-          open={!!endInterviewChain}
-          onClose={handleCloseEndInterview}
-          onSubmit={handleEndInterviewSubmit}
-        />
-      )}
+      <Tooltip title="Create New Interview Chain" TransitionComponent={Zoom}>
+        <Fab
+          color="primary"
+          onClick={onCreateNewChain}
+          sx={{
+            position: "fixed",
+            bottom: 60, // Adjusted to be above pagination
+            right: 20,
+            zIndex: 1000,
+            width: 56,
+            height: 56,
+            borderRadius: "50%",
+            backgroundColor: theme.palette.primary.main,
+            boxShadow: `0 0 10px ${theme.palette.primary.main}, 0 0 20px ${theme.palette.primary.main}`,
+            "&:hover": {
+              boxShadow: `0 0 15px ${theme.palette.primary.dark}, 0 0 25px ${theme.palette.primary.dark}`,
+              backgroundColor: theme.palette.primary.dark,
+            },
+          }}
+        >
+          <AddIcon />
+        </Fab>
+      </Tooltip>
     </Box>
   );
 }
