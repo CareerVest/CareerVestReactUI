@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Card,
@@ -17,6 +17,7 @@ import {
   Avatar,
   IconButton,
   Tooltip,
+  CircularProgress,
 } from "@mui/material";
 import type {
   InterviewChain,
@@ -30,24 +31,51 @@ import {
   Check,
   Cancel,
 } from "@mui/icons-material";
+import { useInterviewChains } from "./hooks/useInterviewChains";
 
 interface InterviewChainDashboardProps {
   stats: InterviewChainStats;
   recentChains: InterviewChain[];
-  onViewChain: (chain: InterviewChain) => void; // Updated to accept InterviewChain
+  onViewChain: (chain: InterviewChain) => void;
 }
 
 export default function InterviewChainDashboard({
-  stats,
-  recentChains,
+  stats: initialStats,
+  recentChains: initialRecentChains,
   onViewChain,
 }: InterviewChainDashboardProps) {
   const theme = useTheme();
+  const { chains, stats, loading, fetchError, fetchChains } =
+    useInterviewChains();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const handleRefresh = () => {
+  // Use fetched data if available, otherwise fall back to props
+  const effectiveStats = stats.totalChains > 0 ? stats : initialStats;
+  const effectiveRecentChains =
+    chains.length > 0
+      ? chains
+          .sort(
+            (a, b) =>
+              new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+          )
+          .slice(0, 5)
+      : initialRecentChains;
+
+  useEffect(() => {
+    if (!loading && fetchError) {
+      console.error("Failed to load interview chains:", fetchError);
+    }
+  }, [loading, fetchError]);
+
+  const handleRefresh = async () => {
     setIsRefreshing(true);
-    setTimeout(() => setIsRefreshing(false), 1000); // Simulate refresh; replace with actual data fetch if needed
+    try {
+      await fetchChains();
+    } catch (error) {
+      console.error("Refresh failed:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   const getStatusColor = (status: string | null | undefined) => {
@@ -85,21 +113,30 @@ export default function InterviewChainDashboard({
   };
 
   const renderPieChart = () => {
-    const total = stats.totalChains || 1; // Avoid division by zero
-    const activePercent = (stats.activeChains / total) * 100;
-    const successfulPercent = (stats.successfulChains / total) * 100;
-    const unsuccessfulPercent = (stats.unsuccessfulChains / total) * 100;
+    const total = effectiveStats.totalChains || 1; // Avoid division by zero
+    const activePercent = (effectiveStats.activeChains / total) * 100;
+    const successfulPercent = (effectiveStats.successfulChains / total) * 100;
+    const unsuccessfulPercent =
+      (effectiveStats.unsuccessfulChains / total) * 100;
 
     return (
       <Box
         sx={{
-          height: 300,
+          height: 200,
+          width: "100%",
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
         }}
       >
-        <Box sx={{ position: "relative", width: 200, height: 200 }}>
+        <Box
+          sx={{
+            position: "relative",
+            width: "80%",
+            maxWidth: 150,
+            height: 150,
+          }}
+        >
           <Box
             sx={{
               position: "absolute",
@@ -134,7 +171,7 @@ export default function InterviewChainDashboard({
               alignItems: "center",
             }}
           >
-            <Typography variant="h6">{stats.totalChains}</Typography>
+            <Typography variant="h6">{effectiveStats.totalChains}</Typography>
           </Box>
         </Box>
       </Box>
@@ -142,35 +179,38 @@ export default function InterviewChainDashboard({
   };
 
   const renderBarChart = () => {
-    const maxHeight = 200; // Max height in pixels
-    const scaleFactor = stats.monthlyActivity.length
+    const maxHeight = 150;
+    const scaleFactor = effectiveStats.monthlyActivity.length
       ? maxHeight /
         Math.max(
-          ...stats.monthlyActivity.map(
+          ...effectiveStats.monthlyActivity.map(
             (m) => m.active + m.successful + m.unsuccessful
           ),
           20
         )
-      : 1; // Avoid division by zero, default scale
+      : 1;
 
     return (
       <Box
         sx={{
-          height: 300,
+          height: 200,
+          width: "100%",
           display: "flex",
           alignItems: "flex-end",
           justifyContent: "space-around",
           pt: 2,
+          overflowX: "hidden",
         }}
       >
-        {stats.monthlyActivity.map((month, index) => (
+        {effectiveStats.monthlyActivity.map((month, index) => (
           <Box
             key={index}
             sx={{
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              width: `${90 / stats.monthlyActivity.length}%`, // Dynamic width
+              width: `${80 / effectiveStats.monthlyActivity.length}%`,
+              minWidth: 40,
             }}
           >
             <Box
@@ -214,8 +254,41 @@ export default function InterviewChainDashboard({
     );
   };
 
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Typography color="error">{fetchError}</Typography>
+        <IconButton onClick={handleRefresh} color="primary">
+          <Refresh />
+        </IconButton>
+      </Box>
+    );
+  }
+
   return (
-    <Box sx={{ mb: 4 }}>
+    <Box
+      sx={{
+        maxWidth: "100%",
+        overflowX: "hidden",
+        mb: 4,
+        px: { xs: 2, sm: 0 },
+      }}
+    >
       <Box
         sx={{
           display: "flex",
@@ -241,16 +314,17 @@ export default function InterviewChainDashboard({
           </IconButton>
         </Tooltip>
       </Box>
-      <Grid container spacing={3}>
+      <Grid container spacing={2}>
+        {/* Summary Cards */}
         <Grid item xs={12} sm={6} md={3}>
           <Card elevation={2}>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
                 Total Chains
               </Typography>
-              <Typography variant="h4">{stats.totalChains}</Typography>
+              <Typography variant="h4">{effectiveStats.totalChains}</Typography>
               <Typography variant="body2" sx={{ mt: 1 }}>
-                {stats.averageRounds.toFixed(1)} avg. rounds per chain
+                {effectiveStats.averageRounds.toFixed(1)} avg. rounds per chain
               </Typography>
             </CardContent>
           </Card>
@@ -262,7 +336,7 @@ export default function InterviewChainDashboard({
                 Active Chains
               </Typography>
               <Typography variant="h4" sx={{ color: theme.palette.info.main }}>
-                {stats.activeChains}
+                {effectiveStats.activeChains}
               </Typography>
               <Typography
                 variant="body2"
@@ -272,8 +346,12 @@ export default function InterviewChainDashboard({
                   fontSize="small"
                   sx={{ mr: 0.5, color: theme.palette.success.main }}
                 />
-                {stats.totalChains
-                  ? Math.round((stats.activeChains / stats.totalChains) * 100)
+                {effectiveStats.totalChains
+                  ? Math.round(
+                      (effectiveStats.activeChains /
+                        effectiveStats.totalChains) *
+                        100
+                    )
                   : 0}
                 % of total
               </Typography>
@@ -290,7 +368,7 @@ export default function InterviewChainDashboard({
                 variant="h4"
                 sx={{ color: theme.palette.success.main }}
               >
-                {stats.successfulChains}
+                {effectiveStats.successfulChains}
               </Typography>
               <Typography
                 variant="body2"
@@ -300,7 +378,7 @@ export default function InterviewChainDashboard({
                   fontSize="small"
                   sx={{ mr: 0.5, color: theme.palette.success.main }}
                 />
-                {stats.offerRate}% offer rate
+                {effectiveStats.offerRate.toFixed(1)}% offer rate
               </Typography>
             </CardContent>
           </Card>
@@ -312,7 +390,7 @@ export default function InterviewChainDashboard({
                 Unsuccessful Chains
               </Typography>
               <Typography variant="h4" sx={{ color: theme.palette.error.main }}>
-                {stats.unsuccessfulChains}
+                {effectiveStats.unsuccessfulChains}
               </Typography>
               <Typography
                 variant="body2"
@@ -322,9 +400,11 @@ export default function InterviewChainDashboard({
                   fontSize="small"
                   sx={{ mr: 0.5, color: theme.palette.error.main }}
                 />
-                {stats.totalChains
+                {effectiveStats.totalChains
                   ? Math.round(
-                      (stats.unsuccessfulChains / stats.totalChains) * 100
+                      (effectiveStats.unsuccessfulChains /
+                        effectiveStats.totalChains) *
+                        100
                     )
                   : 0}
                 % of total
@@ -332,8 +412,10 @@ export default function InterviewChainDashboard({
             </CardContent>
           </Card>
         </Grid>
+
+        {/* Charts */}
         <Grid item xs={12} md={8}>
-          <Paper elevation={2} sx={{ p: 2, height: "100%" }}>
+          <Paper elevation={2} sx={{ p: 2, minHeight: 250 }}>
             <Typography variant="h6" gutterBottom>
               Monthly Activity
             </Typography>
@@ -341,20 +423,22 @@ export default function InterviewChainDashboard({
           </Paper>
         </Grid>
         <Grid item xs={12} md={4}>
-          <Paper elevation={2} sx={{ p: 2, height: "100%" }}>
+          <Paper elevation={2} sx={{ p: 2, minHeight: 250 }}>
             <Typography variant="h6" gutterBottom>
               Status Breakdown
             </Typography>
             {renderPieChart()}
           </Paper>
         </Grid>
+
+        {/* Lists */}
         <Grid item xs={12} md={6}>
-          <Paper elevation={2} sx={{ p: 2 }}>
+          <Paper elevation={2} sx={{ p: 2, minHeight: 350, maxHeight: 350 }}>
             <Typography variant="h6" gutterBottom>
               Recent Interview Chains
             </Typography>
             <List sx={{ maxHeight: 300, overflow: "auto" }}>
-              {recentChains.map((chain, index) => {
+              {effectiveRecentChains.map((chain, index) => {
                 const latestInterview =
                   chain.interviews[chain.interviews.length - 1];
                 return (
@@ -362,7 +446,7 @@ export default function InterviewChainDashboard({
                     {index > 0 && <Divider />}
                     <ListItem
                       component="button"
-                      onClick={() => onViewChain(chain)} // Pass full chain object
+                      onClick={() => onViewChain(chain)}
                       secondaryAction={
                         <IconButton edge="end" aria-label="more">
                           <MoreVert />
@@ -430,12 +514,12 @@ export default function InterviewChainDashboard({
           </Paper>
         </Grid>
         <Grid item xs={12} md={6}>
-          <Paper elevation={2} sx={{ p: 2 }}>
+          <Paper elevation={2} sx={{ p: 2, minHeight: 350, maxHeight: 350 }}>
             <Typography variant="h6" gutterBottom>
               Top Clients
             </Typography>
             <List sx={{ maxHeight: 300, overflow: "auto" }}>
-              {stats.topClients.map((client, index) => (
+              {effectiveStats.topClients.map((client, index) => (
                 <Box key={client.name}>
                   {index > 0 && <Divider />}
                   <ListItem>
@@ -448,8 +532,10 @@ export default function InterviewChainDashboard({
                     />
                     <Chip
                       label={`${
-                        stats.totalChains
-                          ? Math.round((client.count / stats.totalChains) * 100)
+                        effectiveStats.totalChains
+                          ? Math.round(
+                              (client.count / effectiveStats.totalChains) * 100
+                            )
                           : 0
                       }%`}
                       size="small"

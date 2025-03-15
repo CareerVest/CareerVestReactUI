@@ -27,6 +27,36 @@ namespace Backend.Services
             _logger = logger;
         }
 
+        // Helper method to convert 12-hour AM/PM time to 24-hour format
+        private string ConvertTo24HourFormat(string time)
+        {
+            if (string.IsNullOrEmpty(time)) return null;
+            try
+            {
+                var parts = time.Split(new[] { " " }, StringSplitOptions.RemoveEmptyEntries);
+                var timePart = parts[0];
+                var period = parts.Length > 1 ? parts[1].ToUpper() : "";
+                var timeParts = timePart.Split(':');
+                int hours = int.Parse(timeParts[0]);
+                int minutes = timeParts.Length > 1 ? int.Parse(timeParts[1]) : 0;
+
+                if (period == "PM" && hours != 12)
+                {
+                    hours += 12;
+                }
+                else if (period == "AM" && hours == 12)
+                {
+                    hours = 0;
+                }
+                return $"{hours:D2}:{minutes:D2}";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"Failed to convert time {time} to 24-hour format: {ex.Message}");
+                return time; // Fallback to original time if conversion fails
+            }
+        }
+
         public async Task<List<InterviewChainListDto>> GetInterviewChainsForUserAsync(string azureUserId, string role, int? supervisorId)
         {
             return await _repository.GetAllInterviewChainsAsync(role, await GetEmployeeIdAsync(azureUserId), supervisorId);
@@ -47,11 +77,12 @@ namespace Backend.Services
                 RecruiterID = dto.RecruiterID,
                 InterviewEntryDate = dto.InterviewEntryDate,
                 InterviewDate = dto.InterviewDate,
-                InterviewStartTime = dto.InterviewStartTime,
-                InterviewEndTime = dto.InterviewEndTime,
+                InterviewStartTime = ConvertTo24HourFormat(dto.InterviewStartTime),
+                InterviewEndTime = ConvertTo24HourFormat(dto.InterviewEndTime),
                 InterviewMethod = dto.InterviewMethod,
                 InterviewType = dto.InterviewType,
                 InterviewStatus = dto.InterviewStatus,
+                InterviewSupport = dto.InterviewSupport,
                 ChainStatus = "Active",
                 Rounds = 1,
                 Comments = dto.Comments,
@@ -83,12 +114,17 @@ namespace Backend.Services
 
             // Update interview-level fields
             chain.InterviewDate = dto.InterviewDate ?? chain.InterviewDate;
-            chain.InterviewStartTime = dto.InterviewStartTime ?? chain.InterviewStartTime;
-            chain.InterviewEndTime = dto.InterviewEndTime ?? chain.InterviewEndTime;
+            chain.InterviewStartTime = dto.InterviewStartTime != null
+                ? ConvertTo24HourFormat(dto.InterviewStartTime)
+                : chain.InterviewStartTime;
+            chain.InterviewEndTime = dto.InterviewEndTime != null
+                ? ConvertTo24HourFormat(dto.InterviewEndTime)
+                : chain.InterviewEndTime;
             chain.InterviewMethod = dto.InterviewMethod ?? chain.InterviewMethod;
             chain.InterviewType = dto.InterviewType ?? chain.InterviewType;
             chain.InterviewStatus = dto.InterviewStatus ?? chain.InterviewStatus;
             chain.InterviewOutcome = dto.InterviewOutcome ?? chain.InterviewOutcome;
+            chain.InterviewSupport = dto.InterviewSupport ?? chain.InterviewSupport;
             chain.InterviewFeedback = dto.InterviewFeedback ?? chain.InterviewFeedback;
             chain.Comments = dto.Comments ?? chain.Comments;
             chain.UpdatedTS = DateTime.UtcNow;
@@ -98,6 +134,10 @@ namespace Backend.Services
             if (chain.InterviewStatus == "Scheduled")
             {
                 chain.InterviewOutcome = null;
+                var scheduledRootChain = await GetRootParentChainAsync(chain);
+                scheduledRootChain.ChainStatus = "Active";
+                scheduledRootChain.InterviewOutcome = null;
+                await _repository.UpdateInterviewChainAsync(scheduledRootChain);
             }
 
             await _repository.UpdateInterviewChainAsync(chain);
@@ -106,7 +146,7 @@ namespace Backend.Services
         public async Task<bool> AddInterviewToChainAsync(InterviewChainAddDto dto, string azureUserId)
         {
             var parentChain = await _context.InterviewChain
-                .FirstOrDefaultAsync(c => c.InterviewChainID == dto.InterviewChainID);
+                .FirstOrDefaultAsync(c => c.InterviewChainID == dto.ParentInterviewChainID);
             if (parentChain == null) return false;
 
             var newInterview = new InterviewChain
@@ -118,11 +158,12 @@ namespace Backend.Services
                 RecruiterID = parentChain.RecruiterID,
                 InterviewEntryDate = DateTime.UtcNow,
                 InterviewDate = dto.InterviewDate,
-                InterviewStartTime = dto.InterviewStartTime,
-                InterviewEndTime = dto.InterviewEndTime,
+                InterviewStartTime = ConvertTo24HourFormat(dto.InterviewStartTime),
+                InterviewEndTime = ConvertTo24HourFormat(dto.InterviewEndTime),
                 InterviewMethod = dto.InterviewMethod,
                 InterviewType = dto.InterviewType,
                 InterviewStatus = dto.InterviewStatus,
+                InterviewSupport = dto.InterviewSupport,
                 ChainStatus = "Active",
                 Rounds = parentChain.Rounds + 1,
                 Comments = dto.Comments,
@@ -145,7 +186,6 @@ namespace Backend.Services
                 .FirstOrDefaultAsync(c => c.InterviewChainID == id);
             if (chain == null) throw new KeyNotFoundException("Interview chain not found.");
 
-            // Update the current chain's details
             chain.InterviewStatus = "Completed";
             chain.InterviewOutcome = dto.InterviewOutcome;
             chain.InterviewFeedback = dto.InterviewFeedback ?? chain.InterviewFeedback;
@@ -153,11 +193,9 @@ namespace Backend.Services
             chain.UpdatedTS = DateTime.UtcNow;
             chain.UpdatedBy = azureUserId;
 
-            // Handle the chain status based on the outcome
             switch (dto.InterviewOutcome)
             {
                 case "Offer":
-                    // Find the root parent chain and update its status to "Successful"
                     var offerRootChain = await GetRootParentChainAsync(chain);
                     if (offerRootChain != null)
                     {
@@ -192,20 +230,19 @@ namespace Backend.Services
                         InterviewMethod = null,
                         InterviewType = null,
                         InterviewStatus = "Scheduled",
+                        InterviewSupport = null,
                         Comments = dto.Comments
                     }, azureUserId);
                     await _repository.UpdateInterviewChainAsync(chain);
                     break;
             }
 
-            // Update the current chain unless it's already updated via AddNew
             if (dto.InterviewOutcome != "Offer" && dto.InterviewOutcome != "AddNew")
             {
                 await _repository.UpdateInterviewChainAsync(chain);
             }
         }
 
-        // Helper method to find the root parent chain
         private async Task<InterviewChain> GetRootParentChainAsync(InterviewChain chain)
         {
             var currentChain = chain;

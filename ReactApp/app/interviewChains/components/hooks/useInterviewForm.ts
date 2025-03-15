@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import type {
   Interview,
@@ -39,6 +41,7 @@ export const useInterviewForm = (
     InterviewType: null,
     InterviewStatus: "Scheduled",
     InterviewOutcome: null,
+    InterviewSupport: null,
     InterviewFeedback: null,
     Comments: null,
     CreatedTS: new Date(),
@@ -55,6 +58,8 @@ export const useInterviewForm = (
     InterviewMethod: false,
     InterviewType: false,
     InterviewDate: false,
+    InterviewStartTime: false, // Added
+    InterviewEndTime: false, // Added
     ClientID: false,
     RecruiterID: false,
     position: false,
@@ -66,18 +71,24 @@ export const useInterviewForm = (
   const [clients, setClients] = useState<ClientList[]>([]);
   const [recruiters, setRecruiters] = useState<Recruiter[]>([]);
 
-  // Update ParentInterviewChainID when selectedInterview changes
   useEffect(() => {
     if (selectedInterview) {
       console.log(
         "useInterviewForm: Setting ParentInterviewChainID from selectedInterview:",
         selectedInterview.InterviewChainID
       );
-      setNewInterview((prev) => ({
-        ...prev,
-        ParentInterviewChainID: selectedInterview.InterviewChainID,
-        RecruiterID: selectedInterview.RecruiterID || prev.RecruiterID,
-      }));
+      setNewInterview((prev) => {
+        const updated = {
+          ...prev,
+          ParentInterviewChainID: selectedInterview.InterviewChainID,
+          RecruiterID: selectedInterview.RecruiterID || prev.RecruiterID,
+        };
+        console.log(
+          "useInterviewForm: Updated state after selectedInterview:",
+          updated
+        );
+        return updated;
+      });
     }
   }, [selectedInterview]);
 
@@ -148,15 +159,16 @@ export const useInterviewForm = (
       if (field === "InterviewDate" && typeof value === "string" && value) {
         updated[field] = new Date(value);
       }
-
-      // Log when setting ParentInterviewChainID
       if (field === "ParentInterviewChainID") {
         console.log(
           "useInterviewForm: Setting ParentInterviewChainID via handleInputChange:",
           value
         );
       }
-
+      console.log(
+        "useInterviewForm: Updated state after handleInputChange:",
+        updated
+      );
       return updated;
     });
 
@@ -164,6 +176,8 @@ export const useInterviewForm = (
       "InterviewMethod",
       "InterviewType",
       "InterviewDate",
+      "InterviewStartTime", // Added
+      "InterviewEndTime", // Added
       "ClientID",
       "RecruiterID",
       "position",
@@ -201,6 +215,10 @@ export const useInterviewForm = (
           ? `${selectedRecruiter.firstName} ${selectedRecruiter.lastName}`
           : prev.recruiterName;
       }
+      console.log(
+        "useInterviewForm: Updated state after handleAutocompleteChange:",
+        updated
+      );
       return updated;
     });
 
@@ -222,26 +240,30 @@ export const useInterviewForm = (
       }
     ) => void
   ) => {
-    const methodError = !newInterview.InterviewMethod;
-    const typeError = !newInterview.InterviewType;
+    const methodError = !newInterview.InterviewMethod && !isEditing;
+    const typeError = !newInterview.InterviewType && !isEditing;
     const dateError = !newInterview.InterviewDate;
+    const startTimeError = !newInterview.InterviewStartTime && !isEditing; // Added
+    const endTimeError = !newInterview.InterviewEndTime && !isEditing; // Added
 
     const clientError =
-      outcome === "AddNew" ? false : !isEditing && !newInterview.ClientID;
+      !isEditing && outcome === "AddNew" && !chain.id && !newInterview.ClientID; // Updated
     const recruiterError =
-      outcome === "AddNew" ? false : !isEditing && !newInterview.RecruiterID;
-    const positionError = outcome === "AddNew" ? false : !newInterview.position;
+      !isEditing && outcome === "AddNew" && !newInterview.RecruiterID;
+    const positionError =
+      !isEditing && outcome === "AddNew" && !newInterview.position;
     const chainStatusError =
-      outcome === "AddNew" ? false : !newInterview.ChainStatus;
-    const interviewStatusError =
-      outcome === "AddNew" ? false : !newInterview.InterviewStatus;
+      !isEditing && outcome === "AddNew" && !newInterview.ChainStatus;
+    const interviewStatusError = !isEditing && !newInterview.InterviewStatus;
     const endClientNameError =
-      outcome === "AddNew" ? false : !newInterview.EndClientName;
+      !isEditing && outcome === "AddNew" && !newInterview.EndClientName;
 
     console.log("Validation errors:", {
       methodError,
       typeError,
       dateError,
+      startTimeError,
+      endTimeError,
       clientError,
       recruiterError,
       positionError,
@@ -254,6 +276,8 @@ export const useInterviewForm = (
       methodError ||
       typeError ||
       dateError ||
+      startTimeError ||
+      endTimeError ||
       clientError ||
       recruiterError ||
       positionError ||
@@ -265,6 +289,8 @@ export const useInterviewForm = (
         InterviewMethod: methodError,
         InterviewType: typeError,
         InterviewDate: dateError,
+        InterviewStartTime: startTimeError, // Added
+        InterviewEndTime: endTimeError, // Added
         ClientID: clientError,
         RecruiterID: recruiterError,
         position: positionError,
@@ -276,7 +302,6 @@ export const useInterviewForm = (
       return;
     }
 
-    // Ensure ParentInterviewChainID is set if selectedInterview is provided
     if (selectedInterview && !newInterview.ParentInterviewChainID) {
       console.log(
         "Setting ParentInterviewChainID before submission:",
@@ -294,7 +319,6 @@ export const useInterviewForm = (
     );
     setLoading(true);
 
-    // Use selectedInterview.InterviewChainID as the target ID if available
     const targetId = selectedInterview?.InterviewChainID
       ? selectedInterview.InterviewChainID.toString()
       : chain.id;
@@ -306,6 +330,7 @@ export const useInterviewForm = (
 
   return {
     newInterview,
+    setNewInterview,
     errors,
     recruiters,
     clients,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Dialog,
@@ -26,7 +26,7 @@ import {
   ArrowForward,
   ExpandMore,
   AccessTime,
-  Feedback,
+  Comment,
   Info,
 } from "@mui/icons-material";
 import type {
@@ -65,6 +65,12 @@ export default function ChainExploration({
   const router = useRouter();
   const [expanded, setExpanded] = useState<string | false>(false);
   const { roles } = useAuth();
+
+  useEffect(() => {
+    if (!open) {
+      setExpanded(false); // Reset expanded state when dialog closes
+    }
+  }, [open]);
 
   const userRole =
     roles.length > 0
@@ -122,10 +128,13 @@ export default function ChainExploration({
     return d.toLocaleDateString();
   };
 
-  const formatDateTime = (date: Date | string | null) => {
-    if (!date) return "N/A";
-    const d = typeof date === "string" ? new Date(date) : date;
-    return d.toLocaleString();
+  const formatTime12Hour = (time: string | null) => {
+    if (!time) return "N/A";
+    const [hours, minutes] = time.split(":");
+    let hourNum = parseInt(hours, 10);
+    const period = hourNum >= 12 ? "PM" : "AM";
+    hourNum = hourNum % 12 || 12;
+    return `${hourNum}:${minutes} ${period}`;
   };
 
   const handleAccordionChange =
@@ -135,6 +144,10 @@ export default function ChainExploration({
     };
 
   const handleEditInterviewDirectly = (interview: Interview) => {
+    console.log(
+      "ChainExploration: Passing interview to EditInterviewDialog:",
+      interview
+    );
     onEditInterview(interview);
   };
 
@@ -142,6 +155,10 @@ export default function ChainExploration({
     event: React.MouseEvent<HTMLElement>,
     interview: Interview
   ) => {
+    console.log(
+      "ChainExploration: Passing interview to EndInterviewDialog:",
+      interview
+    );
     onEndInterview(chain, false, interview);
     event.stopPropagation();
   };
@@ -159,7 +176,7 @@ export default function ChainExploration({
   };
 
   const showEditInterview = (index: number, interview: Interview) => {
-    return true; // Show for all interviews
+    return true;
   };
 
   return (
@@ -295,13 +312,7 @@ export default function ChainExploration({
                       },
                     }}
                   >
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 2,
-                      }}
-                    >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                       <Typography
                         variant="subtitle1"
                         sx={{ fontWeight: 600, color: "#682A53" }}
@@ -402,7 +413,7 @@ export default function ChainExploration({
                               sx={{ mr: 0.5, color: "text.secondary" }}
                             />
                             <Typography variant="body2">
-                              {interview.InterviewStartTime || "N/A"}
+                              {formatTime12Hour(interview.InterviewStartTime)}
                             </Typography>
                           </Box>
                         </Box>
@@ -419,7 +430,30 @@ export default function ChainExploration({
                               sx={{ mr: 0.5, color: "text.secondary" }}
                             />
                             <Typography variant="body2">
-                              {interview.InterviewEndTime || "N/A"}
+                              {formatTime12Hour(interview.InterviewEndTime)}
+                            </Typography>
+                          </Box>
+                        </Box>
+                        <Box sx={{ mb: 1 }}>
+                          <Typography
+                            variant="subtitle2"
+                            sx={{ fontWeight: 600, color: "#682A53" }}
+                          >
+                            Comments:
+                          </Typography>
+                          <Box
+                            sx={{ display: "flex", alignItems: "flex-start" }}
+                          >
+                            <Comment
+                              fontSize="small"
+                              sx={{
+                                mr: 0.5,
+                                color: "text.secondary",
+                                mt: 0.25,
+                              }}
+                            />
+                            <Typography variant="body2">
+                              {interview.Comments || "N/A"}
                             </Typography>
                           </Box>
                         </Box>
@@ -438,7 +472,7 @@ export default function ChainExploration({
                               sx={{ mr: 0.5, color: "text.secondary" }}
                             />
                             <Typography variant="body2">
-                              {formatDateTime(interview.InterviewEntryDate)}
+                              {formatDate(interview.InterviewEntryDate)}
                             </Typography>
                           </Box>
                         </Box>
@@ -464,21 +498,15 @@ export default function ChainExploration({
                             variant="subtitle2"
                             sx={{ fontWeight: 600, color: "#682A53" }}
                           >
-                            Feedback:
+                            Interview Method:
                           </Typography>
-                          <Box
-                            sx={{ display: "flex", alignItems: "flex-start" }}
-                          >
-                            <Feedback
+                          <Box sx={{ display: "flex", alignItems: "center" }}>
+                            <Info
                               fontSize="small"
-                              sx={{
-                                mr: 0.5,
-                                color: "text.secondary",
-                                mt: 0.25,
-                              }}
+                              sx={{ mr: 0.5, color: "text.secondary" }}
                             />
                             <Typography variant="body2">
-                              {interview.InterviewFeedback || "N/A"}
+                              {interview.InterviewMethod || "N/A"}
                             </Typography>
                           </Box>
                         </Box>

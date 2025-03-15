@@ -21,11 +21,10 @@ import type {
 import InterviewChainSearch from "./interviewChainSearch";
 import ChainExploration from "./chainExploration";
 import { CalendarToday, Person } from "@mui/icons-material";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface InterviewChainHubProps {
   chains: InterviewChain[];
-  // Update the onEndInterview prop type to match what ChainExploration expects
   onEndInterview: (
     chain: InterviewChain,
     isEditing: boolean,
@@ -51,6 +50,11 @@ export default function InterviewChainHub({
   const [selectedChain, setSelectedChain] = useState<InterviewChain | null>(
     null
   );
+
+  // Reset page to 0 whenever searchText or statusFilter changes
+  useEffect(() => {
+    setPage(0);
+  }, [searchText, statusFilter]);
 
   const filteredChains = chains.filter((chain) => {
     const searchTerms = searchText
@@ -275,7 +279,7 @@ export default function InterviewChainHub({
           sx={{
             "& .MuiTablePagination-toolbar": {
               alignItems: "center",
-              paddingRight: "80px", // Add padding to avoid overlap with FAB
+              paddingRight: "80px",
             },
           }}
         />
@@ -285,15 +289,12 @@ export default function InterviewChainHub({
           chain={selectedChain}
           open={!!selectedChain}
           onClose={handleCloseChainView}
-          // Update this to pass the chain and isEditing flag directly
           onEndInterview={onEndInterview}
-          // Update this to pass just the chain
           onAddNewInterview={onAddNewInterview}
           onUpdateChainStatus={(chainId, newStatus) => {
             // Implement this if needed
           }}
           onEditInterview={(interview) => {
-            // Pass the selected chain, true for isEditing, and the interview
             onEndInterview(selectedChain, true, interview);
           }}
         />
@@ -304,7 +305,7 @@ export default function InterviewChainHub({
           onClick={onCreateNewChain}
           sx={{
             position: "fixed",
-            bottom: 60, // Adjusted to be above pagination
+            bottom: 60,
             right: 20,
             zIndex: 1000,
             width: 56,

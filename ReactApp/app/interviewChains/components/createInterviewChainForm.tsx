@@ -17,6 +17,7 @@ import {
   IconButton,
   useTheme,
   FormHelperText,
+  CircularProgress,
 } from "@mui/material";
 import { Close } from "@mui/icons-material";
 import type {
@@ -84,8 +85,8 @@ export default function CreateInterviewChainForm({
       handleInputChange("recruiterName", "");
       handleInputChange("position", "");
       handleInputChange("ChainStatus", "Active");
-      handleInputChange("InterviewStatus", "Scheduled");
-      handleInputChange("InterviewOutcome", "");
+      handleInputChange("InterviewStatus", "Scheduled"); // Prefilled
+      handleInputChange("InterviewOutcome", ""); // Empty
       handleInputChange("RecruiterID", null);
       handleInputChange("ClientID", null);
       handleInputChange("EndClientName", "");
@@ -93,7 +94,8 @@ export default function CreateInterviewChainForm({
       handleInputChange("InterviewStartTime", "");
       handleInputChange("InterviewEndTime", "");
       handleInputChange("InterviewMethod", "");
-      handleInputChange("InterviewType", ""); // Initialize InterviewType
+      handleInputChange("InterviewType", "");
+      handleInputChange("InterviewSupport", "");
       handleInputChange("Comments", "");
       setIsFormInitialized(true);
     }
@@ -136,48 +138,25 @@ export default function CreateInterviewChainForm({
           </IconButton>
         </Box>
       </DialogTitle>
-      <DialogContent
-        sx={{
-          maxHeight: "60vh",
-          overflowY: "auto",
-          padding: 2,
-          position: "relative",
-        }}
-      >
-        {(loading || isSubmitting) && (
-          <Box
-            sx={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: "100%",
-              bgcolor: "rgba(0, 0, 0, 0.5)",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              zIndex: 1000,
-            }}
-          >
-            <Typography color="white">Creating...</Typography>
-          </Box>
-        )}
+      <DialogContent sx={{ maxHeight: "60vh", overflowY: "auto", padding: 2 }}>
         <Box sx={{ mb: 2 }}>
           <Typography variant="subtitle1" gutterBottom>
             New Interview Chain
           </Typography>
         </Box>
-        <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1 }}>
-          <Box>
-            <FormControl fullWidth error={errors.RecruiterID} sx={{ mb: 1 }}>
-              <InputLabel id="recruiter-label">Recruiter *</InputLabel>
+        <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.5 }}>
+          {/* Left Column */}
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+            <FormControl fullWidth error={errors.RecruiterID}>
+              <InputLabel id="recruiter-label">Recruiter Name *</InputLabel>
               <Select
                 labelId="recruiter-label"
                 value={newInterview.RecruiterID || ""}
-                label="Recruiter *"
+                label="Recruiter Name *"
                 onChange={(e) =>
                   handleAutocompleteChange("RecruiterID", e.target.value)
                 }
+                size="small"
                 disabled={isSubmitting || loading}
               >
                 <MenuItem value="">Select Recruiter</MenuItem>
@@ -194,15 +173,92 @@ export default function CreateInterviewChainForm({
                 <FormHelperText>Recruiter is required</FormHelperText>
               )}
             </FormControl>
-            <FormControl fullWidth error={errors.ClientID} sx={{ mb: 1 }}>
-              <InputLabel id="client-label">Client *</InputLabel>
+            <TextField
+              label="Position *"
+              value={newInterview.position || ""}
+              onChange={(e) => handleInputChange("position", e.target.value)}
+              fullWidth
+              size="small"
+              error={errors.position}
+              helperText={errors.position && "Position is required"}
+              disabled={isSubmitting || loading}
+            />
+            <TextField
+              label="Interview Date *"
+              type="date"
+              value={newInterview.InterviewDate || ""}
+              onChange={(e) =>
+                handleInputChange("InterviewDate", e.target.value)
+              }
+              fullWidth
+              size="small"
+              error={errors.InterviewDate}
+              helperText={errors.InterviewDate && "Date is required"}
+              InputLabelProps={{ shrink: true }}
+              disabled={isSubmitting || loading}
+            />
+            <TextField
+              label="Start Time *"
+              type="time"
+              value={newInterview.InterviewStartTime || ""}
+              onChange={(e) =>
+                handleInputChange("InterviewStartTime", e.target.value)
+              }
+              fullWidth
+              size="small"
+              error={errors.InterviewStartTime}
+              helperText={errors.InterviewStartTime && "Start time is required"}
+              InputLabelProps={{ shrink: true }}
+              disabled={isSubmitting || loading}
+            />
+            <FormControl fullWidth error={errors.InterviewType}>
+              <InputLabel id="interview-type-label">
+                Interview Type *
+              </InputLabel>
+              <Select
+                labelId="interview-type-label"
+                value={newInterview.InterviewType || ""}
+                label="Interview Type *"
+                onChange={(e) =>
+                  handleInputChange("InterviewType", e.target.value)
+                }
+                size="small"
+                disabled={isSubmitting || loading}
+              >
+                <MenuItem value="">Select Type</MenuItem>
+                {interviewdropdowns.interviewTypes.map((type) => (
+                  <MenuItem key={type} value={type}>
+                    {type}
+                  </MenuItem>
+                ))}
+              </Select>
+              {errors.InterviewType && (
+                <FormHelperText>Interview Type is required</FormHelperText>
+              )}
+            </FormControl>
+            <TextField
+              label="Interview Status"
+              value={newInterview.InterviewStatus || "Scheduled"}
+              fullWidth
+              size="small"
+              InputProps={{ readOnly: true }}
+              sx={{ backgroundColor: "#f5f5f5", color: "#666" }}
+              disabled
+            />
+          </Box>
+
+          {/* Right Column */}
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+            <FormControl fullWidth error={errors.ClientID}>
+              <InputLabel id="client-label">Client Name *</InputLabel>
               <Select
                 labelId="client-label"
                 value={newInterview.ClientID || ""}
-                label="Client *"
+                label="Client Name *"
                 onChange={(e) =>
                   handleAutocompleteChange("ClientID", e.target.value)
                 }
+                size="small"
                 disabled={isSubmitting || loading}
               >
                 <MenuItem value="">Select Client</MenuItem>
@@ -217,119 +273,18 @@ export default function CreateInterviewChainForm({
               )}
             </FormControl>
             <TextField
-              label="Position *"
-              value={newInterview.position || ""}
-              onChange={(e) => handleInputChange("position", e.target.value)}
-              fullWidth
-              error={errors.position}
-              helperText={errors.position && "Position is required"}
-              sx={{ mb: 1 }}
-              disabled={isSubmitting || loading}
-            />
-            <TextField
               label="End Client Name *"
               value={newInterview.EndClientName || ""}
               onChange={(e) =>
                 handleInputChange("EndClientName", e.target.value)
               }
               fullWidth
+              size="small"
               error={errors.EndClientName}
               helperText={errors.EndClientName && "End Client Name is required"}
-              sx={{ mb: 1 }}
               disabled={isSubmitting || loading}
             />
-            <FormControl fullWidth sx={{ mb: 1 }}>
-              <InputLabel id="chain-status-label">Chain Status</InputLabel>
-              <Select
-                labelId="chain-status-label"
-                value={newInterview.ChainStatus || "Active"}
-                label="Chain Status"
-                onChange={(e) =>
-                  handleInputChange("ChainStatus", e.target.value)
-                }
-                disabled={isSubmitting || loading}
-              >
-                <MenuItem value="Active">Active</MenuItem>
-                <MenuItem value="Successful">Successful</MenuItem>
-                <MenuItem value="Unsuccessful">Unsuccessful</MenuItem>
-              </Select>
-            </FormControl>
-            <FormControl
-              fullWidth
-              error={errors.interviewStatus}
-              sx={{ mb: 1 }}
-            >
-              <InputLabel id="interview-status-label">
-                Interview Status
-              </InputLabel>
-              <Select
-                labelId="interview-status-label"
-                value={newInterview.InterviewStatus || "Scheduled"}
-                label="Interview Status"
-                onChange={(e) =>
-                  handleInputChange("InterviewStatus", e.target.value)
-                }
-                disabled={isSubmitting || loading}
-              >
-                <MenuItem value="Scheduled">Scheduled</MenuItem>
-                <MenuItem value="Completed">Completed</MenuItem>
-                <MenuItem value="Cancelled">Cancelled</MenuItem>
-              </Select>
-              {errors.interviewStatus && (
-                <FormHelperText>Interview Status is required</FormHelperText>
-              )}
-            </FormControl>
-          </Box>
-          <Box>
-            <TextField
-              label="Interview Date *"
-              type="date"
-              value={
-                newInterview.InterviewDate
-                  ? (newInterview.InterviewDate as Date)
-                      .toISOString()
-                      .split("T")[0]
-                  : ""
-              }
-              onChange={(e) =>
-                handleInputChange("InterviewDate", e.target.value)
-              }
-              fullWidth
-              error={errors.InterviewDate}
-              helperText={errors.InterviewDate && "Date is required"}
-              InputLabelProps={{ shrink: true }}
-              sx={{ mb: 1 }}
-              disabled={isSubmitting || loading}
-            />
-            <TextField
-              label="Interview Start Time"
-              type="time"
-              value={newInterview.InterviewStartTime || ""}
-              onChange={(e) =>
-                handleInputChange("InterviewStartTime", e.target.value)
-              }
-              fullWidth
-              InputLabelProps={{ shrink: true }}
-              sx={{ mb: 1 }}
-              disabled={isSubmitting || loading}
-            />
-            <TextField
-              label="Interview End Time"
-              type="time"
-              value={newInterview.InterviewEndTime || ""}
-              onChange={(e) =>
-                handleInputChange("InterviewEndTime", e.target.value)
-              }
-              fullWidth
-              InputLabelProps={{ shrink: true }}
-              sx={{ mb: 1 }}
-              disabled={isSubmitting || loading}
-            />
-            <FormControl
-              fullWidth
-              error={errors.InterviewMethod}
-              sx={{ mb: 1 }}
-            >
+            <FormControl fullWidth error={errors.InterviewMethod}>
               <InputLabel id="interview-method-label">
                 Interview Method *
               </InputLabel>
@@ -340,6 +295,7 @@ export default function CreateInterviewChainForm({
                 onChange={(e) =>
                   handleInputChange("InterviewMethod", e.target.value)
                 }
+                size="small"
                 disabled={isSubmitting || loading}
               >
                 <MenuItem value="">Select Method</MenuItem>
@@ -353,37 +309,59 @@ export default function CreateInterviewChainForm({
                 <FormHelperText>Interview Method is required</FormHelperText>
               )}
             </FormControl>
-            <FormControl fullWidth error={errors.InterviewType} sx={{ mb: 1 }}>
-              <InputLabel id="interview-type-label">
-                Interview Type *
-              </InputLabel>
+            <TextField
+              label="End Time *"
+              type="time"
+              value={newInterview.InterviewEndTime || ""}
+              onChange={(e) =>
+                handleInputChange("InterviewEndTime", e.target.value)
+              }
+              fullWidth
+              size="small"
+              error={errors.InterviewEndTime}
+              helperText={errors.InterviewEndTime && "End time is required"}
+              InputLabelProps={{ shrink: true }}
+              disabled={isSubmitting || loading}
+            />
+            <FormControl fullWidth>
+              <InputLabel id="interview-support-label">Support</InputLabel>
               <Select
-                labelId="interview-type-label"
-                value={newInterview.InterviewType || ""}
-                label="Interview Type *"
+                labelId="interview-support-label"
+                value={newInterview.InterviewSupport || ""}
+                label="Support"
                 onChange={(e) =>
-                  handleInputChange("InterviewType", e.target.value)
+                  handleInputChange("InterviewSupport", e.target.value)
                 }
+                size="small"
                 disabled={isSubmitting || loading}
               >
-                <MenuItem value="">Select Type</MenuItem>
-                {interviewdropdowns.interviewTypes.map((type) => (
-                  <MenuItem key={type} value={type}>
-                    {type}
+                <MenuItem value="">Select Support</MenuItem>
+                {interviewdropdowns.interviewSupports.map((support) => (
+                  <MenuItem key={support} value={support}>
+                    {support}
                   </MenuItem>
                 ))}
               </Select>
-              {errors.InterviewType && (
-                <FormHelperText>Interview Type is required</FormHelperText>
-              )}
             </FormControl>
+            <TextField
+              label="Interview Outcome"
+              value={newInterview.InterviewOutcome || ""}
+              fullWidth
+              size="small"
+              InputProps={{ readOnly: true }}
+              sx={{ backgroundColor: "#f5f5f5", color: "#666" }}
+              disabled
+            />
           </Box>
+
+          {/* Full Width Comments */}
           <Box sx={{ gridColumn: "1 / -1", mt: 1 }}>
             <TextField
               label="Comments"
               value={newInterview.Comments || ""}
               onChange={(e) => handleInputChange("Comments", e.target.value)}
               fullWidth
+              size="small"
               multiline
               rows={3}
               disabled={isSubmitting || loading}
@@ -399,8 +377,13 @@ export default function CreateInterviewChainForm({
           variant="contained"
           onClick={handleCreateSubmit}
           disabled={isSubmitting || loading}
+          startIcon={
+            (isSubmitting || loading) && <CircularProgress size={20} />
+          }
         >
-          {isSubmitting || loading ? "Creating..." : "Create Interview Chain"}
+          {isSubmitting || loading
+            ? "Creating Interview Chain"
+            : "Create Interview Chain"}
         </Button>
       </DialogActions>
     </Dialog>

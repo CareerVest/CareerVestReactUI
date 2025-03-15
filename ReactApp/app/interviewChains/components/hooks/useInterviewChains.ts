@@ -35,9 +35,7 @@ export const useInterviewChains = () => {
     offerRate: 0,
     topClients: [],
   });
-  const [selectedChain, setSelectedChain] = useState<InterviewChain | null>(
-    null
-  );
+  const [selectedChain, setSelectedChain] = useState<InterviewChain | null>(null);
   const [openChainExploration, setOpenChainExploration] = useState(false);
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -66,12 +64,8 @@ export const useInterviewChains = () => {
 
   const updateStats = (chainsData: InterviewChain[]) => {
     const active = chainsData.filter((c) => c.status === "Active").length;
-    const successful = chainsData.filter(
-      (c) => c.status === "Successful"
-    ).length;
-    const unsuccessful = chainsData.filter(
-      (c) => c.status === "Unsuccessful"
-    ).length;
+    const successful = chainsData.filter((c) => c.status === "Successful").length;
+    const unsuccessful = chainsData.filter((c) => c.status === "Unsuccessful").length;
     const totalRounds = chainsData.reduce((sum, c) => sum + c.rounds, 0);
     const offerCount = chainsData.filter((c) =>
       c.interviews.some((i) => i.InterviewOutcome === "Offer")
@@ -90,8 +84,7 @@ export const useInterviewChains = () => {
         month,
         active: monthChains.filter((c) => c.status === "Active").length,
         successful: monthChains.filter((c) => c.status === "Successful").length,
-        unsuccessful: monthChains.filter((c) => c.status === "Unsuccessful")
-          .length,
+        unsuccessful: monthChains.filter((c) => c.status === "Unsuccessful").length,
       };
     });
 
@@ -182,16 +175,15 @@ export const useInterviewChains = () => {
           : null,
         interviewStartTime: newInterview.InterviewStartTime || null,
         interviewEndTime: newInterview.InterviewEndTime || null,
+        interviewMethod: newInterview.InterviewMethod || null,
         interviewType: newInterview.InterviewType || null,
         interviewStatus: "Scheduled",
+        interviewSupport: newInterview.InterviewSupport || null, // Added
         comments: newInterview.Comments || null,
       };
 
       if (newInterview.ParentInterviewChainID) {
-        console.log(
-          "Using ParentInterviewChainID:",
-          newInterview.ParentInterviewChainID
-        );
+        console.log("Using ParentInterviewChainID:", newInterview.ParentInterviewChainID);
         payload.parentInterviewChainID = newInterview.ParentInterviewChainID;
       }
 
@@ -201,16 +193,12 @@ export const useInterviewChains = () => {
       const parentChainId = selectedChain?.id || chainId;
       console.log("Fetching updated chain with parent ID:", parentChainId);
 
-      const updatedChain = await getInterviewChain(
-        Number.parseInt(parentChainId)
-      );
+      const updatedChain = await getInterviewChain(Number.parseInt(parentChainId));
       if (updatedChain) {
         setChains((prev) =>
           prev.map((c) => (c.id === parentChainId ? updatedChain : c))
         );
-        updateStats(
-          chains.map((c) => (c.id === parentChainId ? updatedChain : c))
-        );
+        updateStats(chains.map((c) => (c.id === parentChainId ? updatedChain : c)));
         setSelectedChain(updatedChain);
       }
 
@@ -242,10 +230,7 @@ export const useInterviewChains = () => {
     setFetchError(null);
 
     try {
-      console.log(
-        "Editing interview with ID:",
-        selectedInterview.InterviewChainID
-      );
+      console.log("Editing interview with ID:", selectedInterview.InterviewChainID);
       const payload: InterviewChainUpdate = {
         interviewChainID: selectedInterview.InterviewChainID,
         chainStatus: newInterview.ChainStatus || "Active",
@@ -257,6 +242,7 @@ export const useInterviewChains = () => {
         interviewMethod: newInterview.InterviewMethod || null,
         interviewStatus: newInterview.InterviewStatus || "Scheduled",
         interviewOutcome: newInterview.InterviewOutcome || null,
+        interviewSupport: newInterview.InterviewSupport || null, // Added
         interviewFeedback: newInterview.InterviewFeedback || null,
         comments: newInterview.Comments || null,
       };
@@ -301,12 +287,7 @@ export const useInterviewChains = () => {
     setFetchError(null);
 
     try {
-      console.log(
-        "Ending interview with chain ID:",
-        chainId,
-        "and outcome:",
-        outcome
-      );
+      console.log("Ending interview with chain ID:", chainId, "and outcome:", outcome);
       const payload: InterviewChainEnd = {
         interviewChainID: Number.parseInt(chainId),
         interviewOutcome: outcome,
@@ -320,16 +301,12 @@ export const useInterviewChains = () => {
       const parentChainId = selectedChain?.id || chainId;
       console.log("Fetching updated chain with parent ID:", parentChainId);
 
-      const updatedChain = await getInterviewChain(
-        Number.parseInt(parentChainId)
-      );
+      const updatedChain = await getInterviewChain(Number.parseInt(parentChainId));
       if (updatedChain) {
         setChains((prev) =>
           prev.map((c) => (c.id === parentChainId ? updatedChain : c))
         );
-        updateStats(
-          chains.map((c) => (c.id === parentChainId ? updatedChain : c))
-        );
+        updateStats(chains.map((c) => (c.id === parentChainId ? updatedChain : c)));
         setSelectedChain(updatedChain);
       }
 
@@ -416,6 +393,7 @@ export const useInterviewChains = () => {
         interviewMethod: newInterview?.InterviewMethod || null,
         interviewType: newInterview?.InterviewType || "Phone",
         interviewStatus: newInterview?.InterviewStatus || "Scheduled",
+        interviewSupport: newInterview?.InterviewSupport || null, // Added
         comments: newInterview?.Comments || null,
       };
 

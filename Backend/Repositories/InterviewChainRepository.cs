@@ -31,13 +31,12 @@ namespace Backend.Repositories
         {
             var filter = _accessControlService.GetFilter<InterviewChain>(role, "InterviewChains", employeeId, supervisorId);
 
-            // Subquery to find the latest interview in each chain
             var latestInterviewSubquery = _context.InterviewChain
-                .Where(c => c.ParentInterviewChainID != null) // Exclude roots to avoid self-referencing in the chain
-                .GroupBy(c => c.InterviewChainID) // Group by chain ID to handle the chain structure
+                .Where(c => c.ParentInterviewChainID != null)
+                .GroupBy(c => c.InterviewChainID)
                 .Select(g => new
                 {
-                    RootInterviewChainID = g.Min(c => c.InterviewChainID), // Find the root of the chain
+                    RootInterviewChainID = g.Min(c => c.InterviewChainID),
                     LatestInterview = g.OrderByDescending(c => c.InterviewDate ?? c.InterviewEntryDate)
                                       .ThenByDescending(c => c.UpdatedTS)
                                       .FirstOrDefault()
@@ -47,7 +46,7 @@ namespace Backend.Repositories
                 .Include(c => c.Client)
                 .Include(c => c.Recruiter)
                 //.Where(filter) // Uncomment if filter is needed
-                .Where(c => c.ParentInterviewChainID == null) // Top-level chains only
+                .Where(c => c.ParentInterviewChainID == null)
                 .GroupJoin(
                     latestInterviewSubquery,
                     chain => chain.InterviewChainID,
@@ -84,7 +83,6 @@ namespace Backend.Repositories
         {
             var filter = _accessControlService.GetFilter<InterviewChain>(role, "InterviewChains", employeeId, supervisorId);
 
-            // Fetch all interviews in the chain by traversing the hierarchy
             var allInterviews = await _context.InterviewChain
                 .Include(c => c.Client)
                 .Include(c => c.Recruiter)
@@ -92,11 +90,9 @@ namespace Backend.Repositories
                 //.Where(filter) // Uncomment if filtering is needed
                 .ToListAsync();
 
-            // Find the root interview
             var rootChain = allInterviews.FirstOrDefault(c => c.InterviewChainID == id && c.ParentInterviewChainID == null);
             if (rootChain == null) return null;
 
-            // Recursively collect all interviews in the chain
             var interviews = new List<InterviewDto>();
             var interviewMap = allInterviews.ToDictionary(c => c.InterviewChainID);
 
@@ -172,11 +168,11 @@ namespace Backend.Repositories
                 InterviewDate = chain.InterviewDate,
                 InterviewStartTime = chain.InterviewStartTime,
                 InterviewEndTime = chain.InterviewEndTime,
-                InterviewMethod = chain.InterviewMethod, // Added
+                InterviewMethod = chain.InterviewMethod,
                 InterviewType = chain.InterviewType,
                 InterviewStatus = chain.InterviewStatus,
                 InterviewOutcome = chain.InterviewOutcome,
-                InterviewSupport = chain.InterviewSupport,
+                InterviewSupport = chain.InterviewSupport, // Ensure this is mapped
                 InterviewFeedback = chain.InterviewFeedback,
                 Comments = chain.Comments,
                 CreatedTS = chain.CreatedTS,

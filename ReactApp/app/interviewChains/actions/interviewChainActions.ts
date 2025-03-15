@@ -8,6 +8,7 @@ import type {
   InterviewChainUpdate,
   InterviewChainEnd,
   InterviewChainCreateResponse,
+  InterviewChainAdd,
 } from "../../types/interviewChain/interviewChain";
 import { jwtDecode } from "jwt-decode";
 
@@ -98,34 +99,42 @@ const transformListToInterviewChain = (
 const transformDetailToInterviewChain = (
   data: InterviewChainDetail & { interviews: { $values: any[] } }
 ): InterviewChain => {
-  const interviews: Interview[] = data.interviews.$values.map((i) => ({
-    InterviewChainID: i.interviewChainID,
-    ParentInterviewChainID: i.parentInterviewChainID || null,
-    ClientID: data.clientID || null,
-    EndClientName: data.endClientName || "",
-    Position: i.position || data.position || "",
-    ChainStatus: i.chainStatus || "Active",
-    Rounds: i.rounds || data.rounds,
-    InterviewEntryDate:
-      parseDate(i.interviewEntryDate?.toString()) ||
-      parseDate(data.interviewEntryDate) ||
-      new Date(),
-    RecruiterID: data.recruiterID || null,
-    InterviewDate: parseDate(i.interviewDate?.toString()),
-    InterviewStartTime: i.interviewStartTime || null,
-    InterviewEndTime: i.interviewEndTime || null,
-    InterviewMethod: i.interviewMethod || null,
-    InterviewType: i.interviewType || null,
-    InterviewStatus: i.interviewStatus || "Scheduled",
-    InterviewOutcome: i.interviewOutcome || null,
-    InterviewSupport: i.interviewSupport || null,
-    InterviewFeedback: i.interviewFeedback || null,
-    Comments: i.comments || null,
-    CreatedTS: parseDate(i.createdTS?.toString()) || new Date(),
-    UpdatedTS: parseDate(i.updatedTS?.toString()) || new Date(),
-    CreatedBy: i.createdBy || null,
-    UpdatedBy: i.updatedBy || null,
-  }));
+  console.log(
+    "transformDetailToInterviewChain: Raw API response for interviews:",
+    data.interviews.$values
+  );
+  const interviews: Interview[] = data.interviews.$values.map((i) => {
+    const interview = {
+      InterviewChainID: i.interviewChainID,
+      ParentInterviewChainID: i.parentInterviewChainID || null,
+      ClientID: data.clientID || null,
+      EndClientName: data.endClientName || "",
+      Position: i.position || data.position || "",
+      ChainStatus: i.chainStatus || "Active",
+      Rounds: i.rounds || data.rounds,
+      InterviewEntryDate:
+        parseDate(i.interviewEntryDate?.toString()) ||
+        parseDate(data.interviewEntryDate) ||
+        new Date(),
+      RecruiterID: data.recruiterID || null,
+      InterviewDate: parseDate(i.interviewDate?.toString()),
+      InterviewStartTime: i.interviewStartTime || null,
+      InterviewEndTime: i.interviewEndTime || null,
+      InterviewMethod: i.interviewMethod || null,
+      InterviewType: i.interviewType || null,
+      InterviewStatus: i.interviewStatus || "Scheduled",
+      InterviewOutcome: i.interviewOutcome || null,
+      InterviewSupport: i.interviewSupport || null,
+      InterviewFeedback: i.interviewFeedback || null,
+      Comments: i.comments || null,
+      CreatedTS: parseDate(i.createdTS?.toString()) || new Date(),
+      UpdatedTS: parseDate(i.updatedTS?.toString()) || new Date(),
+      CreatedBy: i.createdBy || null,
+      UpdatedBy: i.updatedBy || null,
+    };
+    console.log("Transformed Interview:", interview);
+    return interview;
+  });
 
   const latestInterview = interviews[interviews.length - 1] || null;
 
@@ -154,6 +163,7 @@ const transformDetailToInterviewChain = (
   };
 };
 
+// Rest of the file remains unchanged
 export async function fetchInterviewChains(): Promise<InterviewChain[]> {
   let token = getAccessToken();
   console.log("🔹 Initial Access Token for Fetch Interview Chains:", token);
@@ -299,18 +309,6 @@ export async function updateInterviewChain(
   }
 }
 
-export interface InterviewChainAdd {
-  interviewChainID: number;
-  parentInterviewChainID?: number;
-  interviewDate?: string | null;
-  interviewStartTime?: string | null;
-  interviewEndTime?: string | null;
-  interviewMethod?: string | null;
-  interviewType?: string | null;
-  interviewStatus?: string;
-  comments?: string | null;
-}
-
 export async function addInterviewToChain(
   chainId: number,
   data: InterviewChainAdd
@@ -323,10 +321,7 @@ export async function addInterviewToChain(
     token = await refreshTokenIfNeeded(token);
     const response = await axiosInstance.post(
       `/api/v1/interviewchains/${chainId}/interviews`,
-      {
-        ...data,
-        interviewType: data.interviewType,
-      },
+      data,
       {
         headers: {
           Authorization: `Bearer ${token}`,

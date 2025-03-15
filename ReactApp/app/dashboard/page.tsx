@@ -70,6 +70,7 @@ const chartData = {
 
 const chartOptions = {
   responsive: true,
+  maintainAspectRatio: false, // Allow chart to fill container height
   plugins: {
     legend: {
       display: false,
@@ -108,7 +109,6 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch interview chains on mount
   useEffect(() => {
     const initializeDashboard = async () => {
       if (!isInitialized) return;
@@ -136,7 +136,6 @@ export default function Dashboard() {
     initializeDashboard();
   }, [isAuthenticated, isInitialized, login]);
 
-  // Update stats based on chains
   const updateStats = (chainsData: InterviewChain[]) => {
     const active = chainsData.filter((c) => c.status === "Active").length;
     const successful = chainsData.filter(
@@ -167,7 +166,6 @@ export default function Dashboard() {
     setActiveTab(newValue);
   };
 
-  // Get recent chains for InterviewChainDashboard
   const recentChains = [...chains]
     .sort(
       (a, b) =>
@@ -175,7 +173,6 @@ export default function Dashboard() {
     )
     .slice(0, 5);
 
-  // Handler for viewing a chain (replace with actual navigation if needed)
   const handleViewChain = (chain: InterviewChain) => {
     console.log(`View chain with ID: ${chain.id}`);
     // Example: router.push(`/interview-chains/${chain.id}`);
@@ -198,9 +195,23 @@ export default function Dashboard() {
   }
 
   return (
-    <Box sx={{ p: 3, width: "100%" }}>
+    <Box
+      sx={{
+        p: { xs: 1, sm: 3 }, // Reduced padding on small screens
+        width: "100%",
+        maxWidth: "100%",
+        overflowX: "hidden", // Prevent horizontal scrolling
+        boxSizing: "border-box",
+      }}
+    >
       <Box sx={{ mb: 4 }}>
-        <Grid container justifyContent="space-between" alignItems="center">
+        <Grid
+          container
+          justifyContent="space-between"
+          alignItems="center"
+          wrap="nowrap" // Prevent wrapping to avoid overflow
+          sx={{ width: "100%" }}
+        >
           <Grid item>
             <Typography
               variant="h4"
@@ -211,14 +222,23 @@ export default function Dashboard() {
             </Typography>
           </Grid>
           <Grid item>
-            <Box sx={{ display: "flex", gap: 2 }}>
+            <Box
+              sx={{
+                display: "flex",
+                gap: 1, // Reduced gap
+                alignItems: "center",
+                maxWidth: { xs: "100%", sm: 400 }, // Responsive search bar width
+              }}
+            >
               <Paper
                 sx={{
                   p: "2px 4px",
                   display: "flex",
                   alignItems: "center",
-                  width: 400,
+                  width: { xs: "100%", sm: 300 }, // Adjusted width
+                  maxWidth: "100%",
                   borderRadius: 2,
+                  boxSizing: "border-box",
                 }}
               >
                 <InputBase
@@ -228,13 +248,13 @@ export default function Dashboard() {
                 />
                 <IconButton
                   type="button"
-                  sx={{ p: "10px" }}
+                  sx={{ p: "8px" }} // Reduced padding
                   aria-label="search"
                 >
                   <Search />
                 </IconButton>
               </Paper>
-              <IconButton>
+              <IconButton sx={{ p: "8px" }}>
                 <Notifications />
               </IconButton>
             </Box>
@@ -256,12 +276,12 @@ export default function Dashboard() {
 
       {/* Tab Content */}
       {activeTab === 0 && (
-        <>
-          <Grid container spacing={3}>
+        <Box sx={{ width: "100%" }}>
+          <Grid container spacing={2}>
             <Grid item xs={12} sm={6} md={3}>
               <StatCard
                 title="Total Clients"
-                value="2,543" // Replace with real data if available
+                value="2,543"
                 icon={<BusinessCenter />}
                 trend={{ value: 12, isPositive: true }}
               />
@@ -269,7 +289,7 @@ export default function Dashboard() {
             <Grid item xs={12} sm={6} md={3}>
               <StatCard
                 title="Active Employees"
-                value="1,243" // Replace with real data if available
+                value="1,243"
                 icon={<Group />}
                 trend={{ value: 8, isPositive: true }}
               />
@@ -277,7 +297,7 @@ export default function Dashboard() {
             <Grid item xs={12} sm={6} md={3}>
               <StatCard
                 title="Revenue Growth"
-                value="$45,678" // Replace with real data if available
+                value="$45,678"
                 icon={<TrendingUp />}
                 trend={{ value: 15, isPositive: true }}
               />
@@ -285,21 +305,21 @@ export default function Dashboard() {
             <Grid item xs={12} sm={6} md={3}>
               <StatCard
                 title="Active Projects"
-                value="89" // Replace with real data if available
+                value="89"
                 icon={<Speed />}
                 trend={{ value: 5, isPositive: false }}
               />
             </Grid>
           </Grid>
 
-          <Grid container spacing={3} sx={{ mt: 2 }}>
+          <Grid container spacing={2} sx={{ mt: 2 }}>
             <Grid item xs={12} md={8}>
               <Card>
                 <CardContent>
                   <Typography variant="h6" sx={{ mb: 2, color: "#682A53" }}>
                     Revenue Overview
                   </Typography>
-                  <Box sx={{ height: 300 }}>
+                  <Box sx={{ height: 250, width: "100%" }}>
                     <Line data={chartData} options={chartOptions} />
                   </Box>
                 </CardContent>
@@ -309,15 +329,17 @@ export default function Dashboard() {
               <ActivityTimeline />
             </Grid>
           </Grid>
-        </>
+        </Box>
       )}
 
       {activeTab === 1 && (
-        <InterviewChainDashboard
-          stats={stats}
-          recentChains={recentChains}
-          onViewChain={handleViewChain}
-        />
+        <Box sx={{ width: "100%" }}>
+          <InterviewChainDashboard
+            stats={stats}
+            recentChains={recentChains}
+            onViewChain={handleViewChain}
+          />
+        </Box>
       )}
     </Box>
   );

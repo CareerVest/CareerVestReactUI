@@ -103,6 +103,7 @@ export interface InterviewChainCreate {
   interviewMethod?: string | null;
   interviewType?: string | null;
   interviewStatus?: string;
+  interviewSupport?: string | null; // Added
   comments?: string | null;
 }
 
@@ -116,6 +117,7 @@ export interface InterviewChainUpdate {
   interviewType?: string | null;
   interviewStatus?: string | null;
   interviewOutcome?: string | null;
+  interviewSupport?: string | null; // Added
   interviewFeedback?: string | null;
   comments?: string | null;
 }
@@ -129,13 +131,14 @@ export interface InterviewChainEnd {
 
 export interface InterviewChainAdd {
   interviewChainID: number;
-  parentInterviewChainID?: number; // Added this field
+  parentInterviewChainID?: number;
   interviewDate?: string | null;
   interviewStartTime?: string | null;
   interviewEndTime?: string | null;
   interviewMethod?: string | null;
   interviewType?: string | null;
   interviewStatus?: string;
+  interviewSupport?: string | null; // Added
   comments?: string | null;
 }
 
@@ -143,7 +146,6 @@ export interface InterviewChainCreateResponse {
   interviewChainID: number;
 }
 
-// Update the ChainExplorationProps interface to include the interview parameter in onEndInterview
 export interface ChainExplorationProps {
   chain: InterviewChain;
   open: boolean;
@@ -161,7 +163,6 @@ export interface ChainExplorationProps {
   onEditInterview: (interview: Interview) => void;
 }
 
-// Update the EndInterviewDialogProps interface to include isSubmitting
 export interface EndInterviewDialogProps {
   chain: InterviewChain;
   open: boolean;
@@ -180,7 +181,6 @@ export interface EndInterviewDialogProps {
   isSubmitting?: boolean;
 }
 
-// Update the AddInterviewDialogProps interface to include isSubmitting
 export interface AddInterviewDialogProps {
   chain: InterviewChain;
   open: boolean;
@@ -198,7 +198,6 @@ export interface AddInterviewDialogProps {
   isSubmitting?: boolean;
 }
 
-// Update the EditInterviewDialogProps interface to include isSubmitting
 export interface EditInterviewDialogProps {
   chain: InterviewChain;
   open: boolean;

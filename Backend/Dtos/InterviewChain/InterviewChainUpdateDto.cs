@@ -13,6 +13,7 @@ namespace Backend.Dtos
         public string? InterviewMethod { get; set; }
         public string? InterviewStatus { get; set; }
         public string? InterviewOutcome { get; set; }
+        public string? InterviewSupport { get; set; }
         public string? InterviewFeedback { get; set; }
         public string? Comments { get; set; }
     }

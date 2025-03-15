@@ -17,12 +17,10 @@ import {
   IconButton,
   FormHelperText,
   Grid,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   useTheme,
+  CircularProgress,
 } from "@mui/material";
-import { Close, ExpandMore } from "@mui/icons-material";
+import { Close } from "@mui/icons-material";
 import type {
   Interview,
   InterviewChain,
@@ -30,7 +28,6 @@ import type {
 import { useInterviewForm } from "./hooks/useInterviewForm";
 import interviewdropdowns from "../../utils/interviewDropdowns.json";
 
-// Props interface already includes selectedInterview and isSubmitting
 interface AddInterviewDialogProps {
   chain: InterviewChain;
   open: boolean;
@@ -65,19 +62,17 @@ export default function AddInterviewDialog({
     loading,
     handleInputChange,
     validateAndSubmit,
-  } = useInterviewForm(chain, false, undefined);
+  } = useInterviewForm(chain, false, undefined, selectedInterview);
 
   const [isFormInitialized, setIsFormInitialized] = useState(false);
 
   useEffect(() => {
     if (open && !isFormInitialized) {
       if (chain.interviews.length > 0) {
-        // Use the selected interview if available, otherwise use the latest interview
         const interviewToUse =
           selectedInterview || chain.interviews[chain.interviews.length - 1];
         handleInputChange("RecruiterID", interviewToUse.RecruiterID || null);
 
-        // Set the ParentInterviewChainID to the selected interview's ID
         if (selectedInterview) {
           console.log(
             "Setting ParentInterviewChainID to:",
@@ -92,14 +87,16 @@ export default function AddInterviewDialog({
       handleInputChange("clientName", chain.clientName || "");
       handleInputChange("position", chain.position || "");
       handleInputChange("recruiterName", chain.recruiterName || "");
+      handleInputChange("EndClientName", chain.endClientName || "");
       handleInputChange("ChainStatus", chain.status || "Active");
-      handleInputChange("InterviewStatus", "Scheduled"); // Always "Scheduled"
-      handleInputChange("InterviewOutcome", "");
+      handleInputChange("InterviewStatus", "Scheduled"); // Prefilled
+      handleInputChange("InterviewOutcome", ""); // Empty
       handleInputChange("InterviewDate", "");
       handleInputChange("InterviewStartTime", "");
       handleInputChange("InterviewEndTime", "");
-      handleInputChange("InterviewType", ""); // Initialize InterviewType
+      handleInputChange("InterviewType", "");
       handleInputChange("InterviewMethod", "");
+      handleInputChange("InterviewSupport", "");
       handleInputChange("Comments", "");
       setIsFormInitialized(true);
     }
@@ -109,15 +106,12 @@ export default function AddInterviewDialog({
   }, [open, chain, handleInputChange, isFormInitialized, selectedInterview]);
 
   const handleAddSubmit = () => {
-    // Prevent submission if already submitting
     if (isSubmitting || loading) return;
 
     validateAndSubmit("AddNew", (chainId, outcome, newInterview) => {
-      // Use the selected interview ID if available
       const targetId = selectedInterview?.InterviewChainID
         ? selectedInterview.InterviewChainID.toString()
         : chainId;
-
       console.log("Submitting new interview with parent ID:", targetId);
       onSubmit(targetId, "AddNew", newInterview);
     });
@@ -126,7 +120,7 @@ export default function AddInterviewDialog({
   return (
     <Dialog
       open={open}
-      onClose={isSubmitting || loading ? undefined : onClose} // Prevent closing during submission
+      onClose={isSubmitting || loading ? undefined : onClose}
       maxWidth="sm"
       fullWidth
     >
@@ -143,42 +137,13 @@ export default function AddInterviewDialog({
             edge="end"
             onClick={onClose}
             aria-label="close"
-            disabled={isSubmitting || loading} // Disable during submission
+            disabled={isSubmitting || loading}
           >
             <Close />
           </IconButton>
         </Box>
       </DialogTitle>
-      <DialogContent
-        sx={{
-          maxHeight: "60vh",
-          overflowY: "auto",
-          padding: 2,
-          position: "relative",
-        }}
-      >
-        {(loading || isSubmitting) && (
-          <Box
-            sx={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: "100%",
-              bgcolor: "rgba(0, 0, 0, 0.5)",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              zIndex: 1000,
-            }}
-          >
-            <Typography color="white">
-              {isSubmitting ? "Submitting..." : "Loading..."}
-            </Typography>
-          </Box>
-        )}
-
-        {/* Form content */}
+      <DialogContent sx={{ maxHeight: "60vh", overflowY: "auto", padding: 2 }}>
         <Box sx={{ mb: 2 }}>
           <Typography variant="subtitle1" gutterBottom>
             {chain.clientName} - {chain.position}
@@ -195,35 +160,54 @@ export default function AddInterviewDialog({
             </Typography>
           )}
         </Box>
-
-        <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.5 }}>
+          {/* Left Column */}
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
             <TextField
               label="Recruiter Name"
               value={newInterview.recruiterName || ""}
               fullWidth
+              size="small"
               InputProps={{ readOnly: true }}
               sx={{ backgroundColor: "#f5f5f5", color: "#666" }}
-              disabled={isSubmitting || loading}
+              disabled
             />
-
-            <TextField
-              label="Client Name"
-              value={newInterview.clientName || ""}
-              fullWidth
-              InputProps={{ readOnly: true }}
-              sx={{ backgroundColor: "#f5f5f5", color: "#666" }}
-              disabled={isSubmitting || loading}
-            />
-
             <TextField
               label="Position"
               value={newInterview.position || ""}
               onChange={(e) => handleInputChange("position", e.target.value)}
               fullWidth
+              size="small"
               disabled={isSubmitting || loading}
             />
-
+            <TextField
+              label="Interview Date *"
+              type="date"
+              value={newInterview.InterviewDate || ""}
+              onChange={(e) =>
+                handleInputChange("InterviewDate", e.target.value)
+              }
+              fullWidth
+              size="small"
+              error={errors.InterviewDate}
+              helperText={errors.InterviewDate && "Date is required"}
+              InputLabelProps={{ shrink: true }}
+              disabled={isSubmitting || loading}
+            />
+            <TextField
+              label="Start Time *"
+              type="time"
+              value={newInterview.InterviewStartTime || ""}
+              onChange={(e) =>
+                handleInputChange("InterviewStartTime", e.target.value)
+              }
+              fullWidth
+              size="small"
+              error={errors.InterviewStartTime}
+              helperText={errors.InterviewStartTime && "Start time is required"}
+              InputLabelProps={{ shrink: true }}
+              disabled={isSubmitting || loading}
+            />
             <FormControl fullWidth error={errors.InterviewType}>
               <InputLabel id="interview-type-label">
                 Interview Type *
@@ -235,10 +219,11 @@ export default function AddInterviewDialog({
                 onChange={(e) =>
                   handleInputChange("InterviewType", e.target.value)
                 }
+                size="small"
                 disabled={isSubmitting || loading}
               >
                 <MenuItem value="">Select Type</MenuItem>
-                {interviewdropdowns?.interviewTypes?.map((type) => (
+                {interviewdropdowns.interviewTypes.map((type) => (
                   <MenuItem key={type} value={type}>
                     {type}
                   </MenuItem>
@@ -248,55 +233,37 @@ export default function AddInterviewDialog({
                 <FormHelperText>Interview Type is required</FormHelperText>
               )}
             </FormControl>
+            <TextField
+              label="Interview Status"
+              value={newInterview.InterviewStatus || "Scheduled"}
+              fullWidth
+              size="small"
+              InputProps={{ readOnly: true }}
+              sx={{ backgroundColor: "#f5f5f5", color: "#666" }}
+              disabled
+            />
           </Box>
 
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          {/* Right Column */}
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
             <TextField
-              label="Interview Date *"
-              type="date"
-              value={
-                newInterview.InterviewDate
-                  ? typeof newInterview.InterviewDate === "string"
-                    ? (newInterview.InterviewDate as string).split("T")[0]
-                    : new Date(newInterview.InterviewDate)
-                        .toISOString()
-                        .split("T")[0]
-                  : ""
-              }
-              onChange={(e) =>
-                handleInputChange("InterviewDate", e.target.value)
-              }
+              label="Client Name"
+              value={newInterview.clientName || ""}
               fullWidth
-              error={errors.InterviewDate}
-              helperText={errors.InterviewDate && "Date is required"}
-              InputLabelProps={{ shrink: true }}
-              disabled={isSubmitting || loading}
+              size="small"
+              InputProps={{ readOnly: true }}
+              sx={{ backgroundColor: "#f5f5f5", color: "#666" }}
+              disabled
             />
-
             <TextField
-              label="Interview Start Time"
-              type="time"
-              value={newInterview.InterviewStartTime || ""}
-              onChange={(e) =>
-                handleInputChange("InterviewStartTime", e.target.value)
-              }
+              label="End Client Name"
+              value={newInterview.EndClientName || ""}
               fullWidth
-              InputLabelProps={{ shrink: true }}
-              disabled={isSubmitting || loading}
+              size="small"
+              InputProps={{ readOnly: true }}
+              sx={{ backgroundColor: "#f5f5f5", color: "#666" }}
+              disabled
             />
-
-            <TextField
-              label="Interview End Time"
-              type="time"
-              value={newInterview.InterviewEndTime || ""}
-              onChange={(e) =>
-                handleInputChange("InterviewEndTime", e.target.value)
-              }
-              fullWidth
-              InputLabelProps={{ shrink: true }}
-              disabled={isSubmitting || loading}
-            />
-
             <FormControl fullWidth error={errors.InterviewMethod}>
               <InputLabel id="interview-method-label">
                 Interview Method *
@@ -308,10 +275,11 @@ export default function AddInterviewDialog({
                 onChange={(e) =>
                   handleInputChange("InterviewMethod", e.target.value)
                 }
+                size="small"
                 disabled={isSubmitting || loading}
               >
                 <MenuItem value="">Select Method</MenuItem>
-                {interviewdropdowns?.interviewMethods?.map((method) => (
+                {interviewdropdowns.interviewMethods.map((method) => (
                   <MenuItem key={method} value={method}>
                     {method}
                   </MenuItem>
@@ -321,14 +289,59 @@ export default function AddInterviewDialog({
                 <FormHelperText>Interview Method is required</FormHelperText>
               )}
             </FormControl>
+            <TextField
+              label="End Time *"
+              type="time"
+              value={newInterview.InterviewEndTime || ""}
+              onChange={(e) =>
+                handleInputChange("InterviewEndTime", e.target.value)
+              }
+              fullWidth
+              size="small"
+              error={errors.InterviewEndTime}
+              helperText={errors.InterviewEndTime && "End time is required"}
+              InputLabelProps={{ shrink: true }}
+              disabled={isSubmitting || loading}
+            />
+            <FormControl fullWidth>
+              <InputLabel id="interview-support-label">Support</InputLabel>
+              <Select
+                labelId="interview-support-label"
+                value={newInterview.InterviewSupport || ""}
+                label="Support"
+                onChange={(e) =>
+                  handleInputChange("InterviewSupport", e.target.value)
+                }
+                size="small"
+                disabled={isSubmitting || loading}
+              >
+                <MenuItem value="">Select Support</MenuItem>
+                {interviewdropdowns.interviewSupports.map((support) => (
+                  <MenuItem key={support} value={support}>
+                    {support}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <TextField
+              label="Interview Outcome"
+              value={newInterview.InterviewOutcome || ""}
+              fullWidth
+              size="small"
+              InputProps={{ readOnly: true }}
+              sx={{ backgroundColor: "#f5f5f5", color: "#666" }}
+              disabled
+            />
           </Box>
 
+          {/* Full Width Comments */}
           <Box sx={{ gridColumn: "1 / -1", mt: 1 }}>
             <TextField
               label="Comments"
               value={newInterview.Comments || ""}
               onChange={(e) => handleInputChange("Comments", e.target.value)}
               fullWidth
+              size="small"
               multiline
               rows={3}
               disabled={isSubmitting || loading}
@@ -345,8 +358,11 @@ export default function AddInterviewDialog({
           variant="contained"
           color="primary"
           disabled={isSubmitting || loading}
+          startIcon={
+            (isSubmitting || loading) && <CircularProgress size={20} />
+          }
         >
-          {isSubmitting || loading ? "Submitting..." : "Add Interview"}
+          {isSubmitting || loading ? "Adding Interview" : "Add Interview"}
         </Button>
       </DialogActions>
     </Dialog>
