@@ -54,7 +54,6 @@ ChartJS.register(
   Legend
 );
 
-// Placeholder revenue chart data (replace with real data if available)
 const chartData = {
   labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
   datasets: [
@@ -70,20 +69,13 @@ const chartData = {
 
 const chartOptions = {
   responsive: true,
-  maintainAspectRatio: false, // Allow chart to fill container height
+  maintainAspectRatio: false,
   plugins: {
-    legend: {
-      display: false,
-    },
+    legend: { display: false },
   },
   scales: {
-    x: {
-      type: "category" as const,
-    },
-    y: {
-      type: "linear" as const,
-      beginAtZero: true,
-    },
+    x: { type: "category" as const },
+    y: { type: "linear" as const, beginAtZero: true },
   },
 };
 
@@ -175,12 +167,11 @@ export default function Dashboard() {
 
   const handleViewChain = (chain: InterviewChain) => {
     console.log(`View chain with ID: ${chain.id}`);
-    // Example: router.push(`/interview-chains/${chain.id}`);
   };
 
   if (!isInitialized || loading) {
     return (
-      <Box sx={{ p: 3, textAlign: "center" }}>
+      <Box sx={{ p: 3, textAlign: "center", width: "100%" }}>
         <Typography>Loading dashboard...</Typography>
       </Box>
     );
@@ -188,7 +179,7 @@ export default function Dashboard() {
 
   if (error) {
     return (
-      <Box sx={{ p: 3 }}>
+      <Box sx={{ p: 3, width: "100%" }}>
         <Typography color="error">{error}</Typography>
       </Box>
     );
@@ -197,11 +188,12 @@ export default function Dashboard() {
   return (
     <Box
       sx={{
-        p: { xs: 1, sm: 3 }, // Reduced padding on small screens
+        p: { xs: 1, sm: 3 },
         width: "100%",
         maxWidth: "100%",
-        overflowX: "hidden", // Prevent horizontal scrolling
+        overflowX: "hidden",
         boxSizing: "border-box",
+        ml: 0, // Remove left gap
       }}
     >
       <Box sx={{ mb: 4 }}>
@@ -209,7 +201,7 @@ export default function Dashboard() {
           container
           justifyContent="space-between"
           alignItems="center"
-          wrap="nowrap" // Prevent wrapping to avoid overflow
+          wrap="nowrap"
           sx={{ width: "100%" }}
         >
           <Grid item>
@@ -225,9 +217,9 @@ export default function Dashboard() {
             <Box
               sx={{
                 display: "flex",
-                gap: 1, // Reduced gap
+                gap: 1,
                 alignItems: "center",
-                maxWidth: { xs: "100%", sm: 400 }, // Responsive search bar width
+                maxWidth: { xs: "100%", sm: 400 },
               }}
             >
               <Paper
@@ -235,7 +227,7 @@ export default function Dashboard() {
                   p: "2px 4px",
                   display: "flex",
                   alignItems: "center",
-                  width: { xs: "100%", sm: 300 }, // Adjusted width
+                  width: { xs: "100%", sm: 300 },
                   maxWidth: "100%",
                   borderRadius: 2,
                   boxSizing: "border-box",
@@ -246,11 +238,7 @@ export default function Dashboard() {
                   placeholder="Search..."
                   inputProps={{ "aria-label": "search" }}
                 />
-                <IconButton
-                  type="button"
-                  sx={{ p: "8px" }} // Reduced padding
-                  aria-label="search"
-                >
+                <IconButton type="button" sx={{ p: "8px" }} aria-label="search">
                   <Search />
                 </IconButton>
               </Paper>
@@ -262,19 +250,17 @@ export default function Dashboard() {
         </Grid>
       </Box>
 
-      {/* Tabs */}
-      <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 3 }}>
+      <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
           aria-label="dashboard tabs"
         >
           <Tab icon={<DashboardIcon />} label="Overview" />
-          <Tab icon={<PeopleIcon />} label="Interview" />
+          <Tab icon={<PeopleIcon />} label="Interview Chains" />
         </Tabs>
       </Box>
 
-      {/* Tab Content */}
       {activeTab === 0 && (
         <Box sx={{ width: "100%" }}>
           <Grid container spacing={2}>
