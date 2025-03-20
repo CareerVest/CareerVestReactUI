@@ -7,9 +7,12 @@ import { useRouter, usePathname } from "next/navigation";
 import { theme } from "../styles/theme";
 import { AuthProvider, useAuth } from "../contexts/authContext";
 import { setAxiosGetToken } from "@/app/utils/axiosInstance";
-import permissions from "./utils/permissions";
+import { useInactivity } from "@/hooks/useInactivityTimout";
 import Sidebar from "./sharedComponents/sidebar";
+import permissions from "./utils/permissions";
+import InactivityPopup from "./inactivity/components/inactivityPopup";
 
+// InnerContent component to use useAuth within AuthProvider
 function InnerContent({ children }: { children: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const router = useRouter();
@@ -17,12 +20,16 @@ function InnerContent({ children }: { children: React.ReactNode }) {
   const isLoginPage = pathname === "/login";
   const { isAuthenticated, isInitialized, getToken, roles } = useAuth();
   const [userRole, setUserRole] = useState<string>("default");
-  const [isLoading, setIsLoading] = useState(true); // New loading state
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Use the updated inactivity hook (30 minutes initial, 30 seconds countdown)
+  const { isInactive, timeLeft, handleExtendSession, handleLogout } =
+    useInactivity(30, 30);
 
   useEffect(() => {
     if (!isInitialized) return;
 
-    setIsLoading(false); // Stop loading once initialized
+    setIsLoading(false);
 
     if (isAuthenticated) {
       setAxiosGetToken(getToken);
@@ -84,6 +91,14 @@ function InnerContent({ children }: { children: React.ReactNode }) {
           </Box>
         </Box>
       )}
+      {isAuthenticated && (
+        <InactivityPopup
+          open={isInactive}
+          timeLeft={timeLeft}
+          onExtend={handleExtendSession}
+          onLogout={handleLogout}
+        />
+      )}
     </>
   );
 }
@@ -98,7 +113,9 @@ export default function RootLayout({
       <body>
         <AuthProvider>
           <ThemeProvider theme={theme}>
-            <InnerContent>{children}</InnerContent>
+            <div id="app-container">
+              <InnerContent>{children}</InnerContent>
+            </div>
           </ThemeProvider>
         </AuthProvider>
       </body>
