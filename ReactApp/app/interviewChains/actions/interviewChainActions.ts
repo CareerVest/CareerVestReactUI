@@ -10,47 +10,15 @@ import type {
   InterviewChainCreateResponse,
   InterviewChainAdd,
 } from "../../types/interviewChain/interviewChain";
-import { jwtDecode } from "jwt-decode";
 
-const getAccessToken = (): string => {
-  const token = localStorage.getItem("accessToken");
-  if (!token) {
-    console.warn(
-      "🔸 Access token not found in localStorage. Attempting to rehydrate from MSAL..."
-    );
-    const msalToken =
-      localStorage.getItem("msal.idtoken") ||
-      localStorage.getItem("msal.accesstoken");
-    if (msalToken) {
-      localStorage.setItem("accessToken", msalToken);
-      return msalToken;
-    }
-    throw new Error("Access token is missing. Please log in again.");
-  }
-  return token;
-};
-
-const refreshTokenIfNeeded = async (token: string): Promise<string> => {
-  try {
-    const decoded: any = jwtDecode(token);
-    const currentTime = Math.floor(Date.now() / 1000);
-    if (decoded.exp && decoded.exp < currentTime) {
-      console.log("🔸 Token expired, attempting refresh...");
-      throw new Error("Token expired. Please log in again.");
-    }
-    return token;
-  } catch (error) {
-    console.error("Error decoding or refreshing token:", error);
-    throw new Error("Token invalid or expired. Please log in again.");
-  }
-};
-
+// Utility to parse dates
 const parseDate = (dateStr: string | null | undefined): Date | null => {
   if (!dateStr) return null;
   const d = new Date(dateStr);
   return isNaN(d.getTime()) ? null : d;
 };
 
+// Transform list data to InterviewChain
 const transformListToInterviewChain = (
   data: InterviewChainList[]
 ): InterviewChain[] => {
@@ -96,6 +64,7 @@ const transformListToInterviewChain = (
   }));
 };
 
+// Transform detail data to InterviewChain
 const transformDetailToInterviewChain = (
   data: InterviewChainDetail & { interviews: { $values: any[] } }
 ): InterviewChain => {
@@ -163,22 +132,13 @@ const transformDetailToInterviewChain = (
   };
 };
 
-// Rest of the file remains unchanged
+// API Functions
 export async function fetchInterviewChains(): Promise<InterviewChain[]> {
-  let token = getAccessToken();
-  console.log("🔹 Initial Access Token for Fetch Interview Chains:", token);
-
   try {
-    token = await refreshTokenIfNeeded(token);
     const response = await axiosInstance.get<{
       $id: string;
       $values: InterviewChainList[];
-    }>("/api/v1/interviewchains", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
+    }>("/api/v1/interviewchains");
     const rawData = response.data.$values;
     console.log("✅ Extracted Interview Chains Data:", rawData);
     return transformListToInterviewChain(rawData);
@@ -199,19 +159,10 @@ export async function fetchInterviewChains(): Promise<InterviewChain[]> {
 export async function getInterviewChain(
   id: number
 ): Promise<InterviewChain | null> {
-  let token = getAccessToken();
-  console.log("🔹 Initial Access Token for Fetch Interview Chain:", token);
-
   try {
-    token = await refreshTokenIfNeeded(token);
     const response = await axiosInstance.get<
       InterviewChainDetail & { interviews: { $values: any[] } }
-    >(`/api/v1/interviewchains/${id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
+    >(`/api/v1/interviewchains/${id}`);
     const rawData = response.data;
     console.log(
       "✅ Extracted Interview Chain Data:",
@@ -241,22 +192,12 @@ export async function getInterviewChain(
 export async function createInterviewChain(
   data: InterviewChainCreate
 ): Promise<number> {
-  let token = getAccessToken();
-  console.log("🔹 Initial Access Token for Create Interview Chain:", token);
-
   try {
-    token = await refreshTokenIfNeeded(token);
     const response = await axiosInstance.post<InterviewChainCreateResponse>(
       "/api/v1/interviewchains",
       data,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
+      { headers: { "Content-Type": "application/json" } }
     );
-
     console.log("✅ Interview Chain Created Successfully:", response.data);
     return response.data.interviewChainID;
   } catch (error: any) {
@@ -277,22 +218,12 @@ export async function updateInterviewChain(
   id: number,
   data: InterviewChainUpdate
 ): Promise<boolean> {
-  let token = getAccessToken();
-  console.log("🔹 Initial Access Token for Update Interview Chain:", token);
-
   try {
-    token = await refreshTokenIfNeeded(token);
     const response = await axiosInstance.put(
       `/api/v1/interviewchains/${id}`,
       data,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
+      { headers: { "Content-Type": "application/json" } }
     );
-
     console.log("✅ Interview Chain Updated Successfully");
     return response.status === 204;
   } catch (error: any) {
@@ -313,23 +244,13 @@ export async function addInterviewToChain(
   chainId: number,
   data: InterviewChainAdd
 ): Promise<boolean> {
-  let token = getAccessToken();
-  console.log("🔹 Initial Access Token for Add Interview to Chain:", token);
   console.log("🔹 Adding interview with data:", JSON.stringify(data, null, 2));
-
   try {
-    token = await refreshTokenIfNeeded(token);
     const response = await axiosInstance.post(
       `/api/v1/interviewchains/${chainId}/interviews`,
       data,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
+      { headers: { "Content-Type": "application/json" } }
     );
-
     console.log("✅ Interview Added to Chain Successfully");
     return response.status === 201;
   } catch (error: any) {
@@ -350,23 +271,13 @@ export async function endInterviewChain(
   chainId: number,
   data: InterviewChainEnd
 ): Promise<boolean> {
-  let token = getAccessToken();
-  console.log("🔹 Initial Access Token for End Interview:", token);
   console.log("🔹 Ending interview with data:", JSON.stringify(data, null, 2));
-
   try {
-    token = await refreshTokenIfNeeded(token);
     const response = await axiosInstance.put(
       `/api/v1/interviewchains/${chainId}/end`,
       data,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
+      { headers: { "Content-Type": "application/json" } }
     );
-
     console.log("✅ Interview Ended Successfully");
     return response.status === 204;
   } catch (error: any) {
@@ -384,20 +295,10 @@ export async function endInterviewChain(
 }
 
 export async function deleteInterviewChain(id: number): Promise<boolean> {
-  let token = getAccessToken();
-  console.log("🔹 Initial Access Token for Delete Interview Chain:", token);
-
   try {
-    token = await refreshTokenIfNeeded(token);
     const response = await axiosInstance.delete(
-      `/api/v1/interviewchains/${id}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
+      `/api/v1/interviewchains/${id}`
     );
-
     console.log("✅ Interview Chain Deleted Successfully");
     return response.status === 204;
   } catch (error: any) {

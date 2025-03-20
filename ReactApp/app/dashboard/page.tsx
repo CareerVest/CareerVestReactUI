@@ -43,6 +43,7 @@ import type {
 } from "@/app/types/interviewChain/interviewChain";
 import { fetchInterviewChains } from "../interviewChains/actions/interviewChainActions";
 import { useAuth } from "@/contexts/authContext";
+import { useRouter } from "next/navigation";
 
 ChartJS.register(
   CategoryScale,
@@ -81,6 +82,7 @@ const chartOptions = {
 
 export default function Dashboard() {
   const { isAuthenticated, isInitialized, login } = useAuth();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState(0);
   const [chains, setChains] = useState<InterviewChain[]>([]);
   const [stats, setStats] = useState<InterviewChainStats>({
@@ -109,6 +111,7 @@ export default function Dashboard() {
         const loginSuccess = await login();
         if (!loginSuccess) {
           setError("Please log in to view the dashboard.");
+          router.push("/login");
           return;
         }
       }
@@ -119,14 +122,18 @@ export default function Dashboard() {
         setChains(fetchedChains);
         updateStats(fetchedChains);
       } catch (err: any) {
+        console.error("Error in initializeDashboard:", err);
         setError(err.message || "Failed to load dashboard data.");
+        if (err.message.includes("token") || err.message.includes("login")) {
+          router.push("/login"); // Redirect to login on auth-related errors
+        }
       } finally {
         setLoading(false);
       }
     };
 
     initializeDashboard();
-  }, [isAuthenticated, isInitialized, login]);
+  }, [isAuthenticated, isInitialized, login, router]);
 
   const updateStats = (chainsData: InterviewChain[]) => {
     const active = chainsData.filter((c) => c.status === "Active").length;
@@ -193,7 +200,7 @@ export default function Dashboard() {
         maxWidth: "100%",
         overflowX: "hidden",
         boxSizing: "border-box",
-        ml: 0, // Remove left gap
+        ml: 0,
       }}
     >
       <Box sx={{ mb: 4 }}>

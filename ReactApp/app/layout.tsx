@@ -1,124 +1,104 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { Box } from "@mui/material";
 import { ThemeProvider } from "@mui/material/styles";
 import { useRouter, usePathname } from "next/navigation";
 import { theme } from "../styles/theme";
-import Sidebar from "./sharedComponents/sidebar";
-import { InactivityTimeoutProvider } from "../contexts/inactivityTimeoutContext";
-import { useInactivityTimeoutHook } from "../hooks/useInactivityTimout";
-// import { InactivityWarning } from "./sharedComponents/inactivityWarning";
-import { AuthProvider } from "../contexts/authContext";
-//import "../styles/globals.css";
+import { AuthProvider, useAuth } from "../contexts/authContext";
+import { setAxiosGetToken } from "@/app/utils/axiosInstance";
 import permissions from "./utils/permissions";
+import Sidebar from "./sharedComponents/sidebar";
 
-// const InactivityWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-//   const { isWarningVisible, resetTimer } = useInactivityTimeoutHook();
-
-//   return (
-//     <>
-//       {children}
-//       <InactivityWarning isOpen={isWarningVisible} onStayLoggedIn={resetTimer} />
-//     </>
-//   );
-// };
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+function InnerContent({ children }: { children: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const isLoginPage = pathname === "/login";
-
+  const { isAuthenticated, isInitialized, getToken, roles } = useAuth();
   const [userRole, setUserRole] = useState<string>("default");
+  const [isLoading, setIsLoading] = useState(true); // New loading state
 
   useEffect(() => {
-    const checkAuth = () => {
-      const auth = localStorage.getItem("isAuthenticated") === "true";
-      setIsAuthenticated(auth);
+    if (!isInitialized) return;
 
-      if (!auth && !isLoginPage) {
-        router.replace("/login");
-      }
+    setIsLoading(false); // Stop loading once initialized
 
-      const storedRoles = localStorage.getItem("roles");
-      if (storedRoles) {
-        const roles = JSON.parse(storedRoles) as string[];
-        setUserRole(
-          roles.length > 0
-            ? roles.includes("Admin")
-              ? "Admin"
-              : roles.includes("Sales_Executive")
-              ? "Sales_Executive"
-              : roles.includes("Senior_Recruiter")
-              ? "Senior_Recruiter"
-              : roles.includes("recruiter")
-              ? "recruiter"
-              : roles.includes("Resume_Writer")
-              ? "Resume_Writer"
-              : "default"
+    if (isAuthenticated) {
+      setAxiosGetToken(getToken);
+      const role =
+        roles.length > 0
+          ? roles.includes("Admin")
+            ? "Admin"
+            : roles.includes("Sales_Executive")
+            ? "Sales_Executive"
+            : roles.includes("Senior_Recruiter")
+            ? "Senior_Recruiter"
+            : roles.includes("recruiter")
+            ? "recruiter"
+            : roles.includes("Resume_Writer")
+            ? "Resume_Writer"
             : "default"
-        );
-      }
-    };
+          : "default";
+      setUserRole(role);
+    } else if (!isLoginPage) {
+      router.replace("/login");
+    }
+  }, [isAuthenticated, isInitialized, pathname, router, getToken, roles]);
 
-    checkAuth();
-    window.addEventListener("storage", checkAuth);
-
-    return () => {
-      window.removeEventListener("storage", checkAuth);
-    };
-  }, [pathname, router]);
-
-  if (isAuthenticated === null) {
+  if (isLoading || !isInitialized) {
     return (
-      <html lang="en">
-        <body>
-          <div style={{ textAlign: "center", marginTop: "20%" }}>Loading...</div>
-        </body>
-      </html>
+      <div style={{ textAlign: "center", marginTop: "20%" }}>Loading...</div>
     );
   }
 
-  // Define sidebar widths
   const sidebarWidthExpanded = 280;
   const sidebarWidthCollapsed = 80;
 
+  return (
+    <>
+      {isLoginPage ? (
+        children
+      ) : (
+        <Box sx={{ minHeight: "100vh", display: "flex" }}>
+          {isAuthenticated && (
+            <Sidebar
+              permissions={permissions}
+              userRole={userRole}
+              isCollapsed={isCollapsed}
+              setIsCollapsed={setIsCollapsed}
+            />
+          )}
+          <Box
+            component="main"
+            sx={{
+              flexGrow: 1,
+              bgcolor: "background.default",
+              width: `calc(100% - ${
+                isCollapsed ? sidebarWidthCollapsed : sidebarWidthExpanded
+              }px)`,
+              transition: "width 0.3s ease",
+            }}
+          >
+            {children}
+          </Box>
+        </Box>
+      )}
+    </>
+  );
+}
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
       <body>
         <AuthProvider>
           <ThemeProvider theme={theme}>
-            {/* <InactivityTimeoutProvider> */}
-              {isLoginPage ? (
-                children
-              ) : (
-                // <InactivityWrapper>
-                  <Box sx={{ minHeight: "100vh", display: "flex" }}>
-                    {isAuthenticated && (
-                      <Sidebar
-                        permissions={permissions}
-                        userRole={userRole}
-                        isCollapsed={isCollapsed}
-                        setIsCollapsed={setIsCollapsed}
-                      />
-                    )}
-                    <Box
-                      component="main"
-                      sx={{
-                        flexGrow: 1,
-                        bgcolor: "background.default",
-                        width: `calc(100% - ${isCollapsed ? sidebarWidthCollapsed : sidebarWidthExpanded}px)`,
-                        transition: "width 0.3s ease",
-                      }}
-                    >
-                      {children}
-                    </Box>
-                  </Box>
-                // </InactivityWrapper>
-              )}
-            {/* </InactivityTimeoutProvider> */}
+            <InnerContent>{children}</InnerContent>
           </ThemeProvider>
         </AuthProvider>
       </body>

@@ -1,67 +1,24 @@
 import axiosInstance from "@/app/utils/axiosInstance";
 import { ClientDetail } from "@/app/types/Clients/ClientDetail";
 import type { ClientList } from "../../types/Clients/ClientList";
-import { Client, PaymentSchedule } from "@/app/types/Clients/Client";
-import { jwtDecode } from "jwt-decode";
+import { Client } from "@/app/types/Clients/Client";
 
-// Function to get the access token from localStorage or MSAL
-const getAccessToken = (): string => {
-  const token = localStorage.getItem("accessToken");
-  if (!token) {
-    console.warn(
-      "🔸 Access token not found in localStorage. Attempting to rehydrate from MSAL..."
-    );
-    const msalToken =
-      localStorage.getItem("msal.idtoken") ||
-      localStorage.getItem("msal.accesstoken");
-    if (msalToken) {
-      localStorage.setItem("accessToken", msalToken);
-      return msalToken;
-    }
-    throw new Error("Access token is missing. Please log in again.");
-  }
-  return token;
-};
-
-// Helper function to refresh token if expired
-const refreshTokenIfNeeded = async (token: string): Promise<string> => {
-  try {
-    const decoded: any = jwtDecode(token);
-    const currentTime = Math.floor(Date.now() / 1000);
-    if (decoded.exp && decoded.exp < currentTime) {
-      console.log("🔸 Token expired, attempting refresh...");
-      throw new Error("Token expired. Please log in again.");
-    }
-    return token;
-  } catch (error) {
-    console.error("Error decoding or refreshing token:", error);
-    throw new Error("Token invalid or expired. Please log in again.");
-  }
+// Utility to parse dates
+const parseDate = (dateStr: string | null | undefined): Date | null => {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  console.log(`Parsing date ${dateStr} resulted in ${d.toString()}`); // Debug log
+  return isNaN(d.getTime()) ? null : d;
 };
 
 export async function fetchClients(): Promise<ClientList[]> {
-  let token = getAccessToken();
-  console.log("🔹 Initial Access Token:", token);
-
   try {
-    token = await refreshTokenIfNeeded(token);
-    const response = await axiosInstance.get("/api/v1/clients", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
+    const response = await axiosInstance.get("/api/v1/clients");
     const clients = response.data?.$values || response.data;
     console.log("✅ Extracted Clients Array:", clients);
     return clients;
   } catch (error: any) {
     console.error("Error fetching clients:", error);
-    if (
-      error.message?.includes("Token expired") ||
-      error.message?.includes("Access token is missing")
-    ) {
-      throw new Error("Authentication required. Redirecting to login...");
-    }
     throw new Error(
       `Failed to fetch clients: ${
         error.response?.data?.message || error.message
@@ -71,25 +28,10 @@ export async function fetchClients(): Promise<ClientList[]> {
 }
 
 export async function getClient(id: number): Promise<ClientDetail | null> {
-  let token = getAccessToken();
-  console.log("🔹 Initial Access Token for Client Fetch:", token);
-
   try {
-    token = await refreshTokenIfNeeded(token);
-    const response = await axiosInstance.get(`/api/v1/clients/${id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
+    const response = await axiosInstance.get(`/api/v1/clients/${id}`);
     const clientData = response.data;
     console.log("🔹 Raw Client Data:", clientData);
-    const parseDate = (dateStr: string | null | undefined): Date | null => {
-      if (!dateStr) return null;
-      const d = new Date(dateStr);
-      console.log(`Parsing date ${dateStr} resulted in ${d.toString()}`); // Debug log
-      return isNaN(d.getTime()) ? null : d;
-    };
 
     return {
       clientID: clientData.clientID,
@@ -173,19 +115,13 @@ export async function getClient(id: number): Promise<ClientDetail | null> {
     };
   } catch (error: any) {
     console.error("Error fetching client:", error);
-    if (
-      error.message?.includes("Token expired") ||
-      error.message?.includes("Access token is missing")
-    ) {
-      throw new Error("Authentication required. Redirecting to login...");
-    }
     throw new Error(
       `Failed to fetch client: ${
         error.response?.data?.message || error.message
       }`
     );
   }
-} 
+}
 
 interface ClientsForRecruiterResponse {
   $id: string;
@@ -195,29 +131,13 @@ interface ClientsForRecruiterResponse {
 export async function getClientsForRecruiterId(
   recruiterId: number
 ): Promise<ClientsForRecruiterResponse> {
-  let token = getAccessToken();
-  console.log("🔹 Initial Access Token for Clients by Recruiter Fetch:", token);
-
   try {
-    token = await refreshTokenIfNeeded(token);
-
     const response = await axiosInstance.get(
-      `/api/v1/clients/byrecruiter/${recruiterId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
+      `/api/v1/clients/byrecruiter/${recruiterId}`
     );
     return response.data;
   } catch (error: any) {
     console.error("Error fetching clients by recruiter:", error);
-    if (
-      error.message?.includes("Token expired") ||
-      error.message?.includes("Access token is missing")
-    ) {
-      throw new Error("Authentication required. Redirecting to login...");
-    }
     throw new Error(
       `Failed to fetch clients for recruiter: ${
         error.response?.data?.message || error.message
@@ -232,14 +152,10 @@ export async function updateClient(
   serviceAgreementFile?: File | null,
   promissoryNoteFile?: File | null
 ): Promise<boolean> {
-  let token = getAccessToken();
-  console.log("🔹 Initial Access Token for Update Client:", token);
-
   try {
-    token = await refreshTokenIfNeeded(token);
     const formData = new FormData();
     formData.append("clientID", id.toString());
-    formData.append("clientDto", JSON.stringify(updatedClient)); // Updated key to match binder
+    formData.append("clientDto", JSON.stringify(updatedClient));
     if (serviceAgreementFile) {
       formData.append("ServiceAgreement", serviceAgreementFile);
     }
@@ -257,7 +173,6 @@ export async function updateClient(
       formData,
       {
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
         },
       }
@@ -278,12 +193,6 @@ export async function updateClient(
       `Error updating client (ID: ${id}):`,
       error.response?.data || error.message
     );
-    if (
-      error.message?.includes("Token expired") ||
-      error.message?.includes("Access token is missing")
-    ) {
-      throw new Error("Authentication required. Redirecting to login...");
-    }
     throw new Error(
       `Failed to update client: ${
         error.response?.data?.message || error.message
@@ -297,15 +206,9 @@ export async function createClient(
   serviceAgreementFile?: File | null,
   promissoryNoteFile?: File | null
 ): Promise<boolean> {
-  let token = getAccessToken();
-  console.log("🔹 Initial Access Token for Create Client:", token);
-
   try {
-    token = await refreshTokenIfNeeded(token);
-
     const formData = new FormData();
 
-    // Validate required fields before proceeding
     if (
       !createClientData.clientName ||
       createClientData.clientName.trim() === ""
@@ -319,7 +222,6 @@ export async function createClient(
       throw new Error("ClientStatus is required.");
     }
 
-    // Prepare client data with proper type checking and default values
     const clientDataToSend = {
       clientID: createClientData.clientID || 0,
       clientName: createClientData.clientName,
@@ -327,12 +229,10 @@ export async function createClient(
         ? new Date(createClientData.enrollmentDate).toISOString()
         : null,
       techStack: createClientData.techStack || null,
+      visaStatus: createClientData.visaStatus || null,
       personalPhoneNumber: createClientData.personalPhoneNumber || null,
       personalEmailAddress: createClientData.personalEmailAddress || null,
-      assignedRecruiterID: createClientData.assignedRecruiterID || null,
-      visaStatus: createClientData.visaStatus || null,
       linkedInURL: createClientData.linkedInURL || null,
-      clientStatus: createClientData.clientStatus,
       marketingStartDate: createClientData.marketingStartDate
         ? new Date(createClientData.marketingStartDate).toISOString()
         : null,
@@ -341,6 +241,8 @@ export async function createClient(
         : null,
       marketingEmailID: createClientData.marketingEmailID || null,
       marketingEmailPassword: createClientData.marketingEmailPassword || null,
+      assignedRecruiterID: createClientData.assignedRecruiterID || null,
+      clientStatus: createClientData.clientStatus,
       placedDate: createClientData.placedDate
         ? new Date(createClientData.placedDate).toISOString()
         : null,
@@ -472,10 +374,7 @@ export async function createClient(
           : null,
     };
 
-    // Append client data as a single JSON string
     formData.append("clientDto", JSON.stringify(clientDataToSend));
-
-    // Append files
     if (serviceAgreementFile) {
       formData.append("ServiceAgreement", serviceAgreementFile);
     }
@@ -483,7 +382,6 @@ export async function createClient(
       formData.append("PromissoryNote", promissoryNoteFile);
     }
 
-    // Debug FormData
     console.log("🔹 Final FormData to Send:");
     for (let [key, value] of formData.entries()) {
       console.log(
@@ -491,17 +389,15 @@ export async function createClient(
       );
     }
 
-    // Make API call
     const response = await axiosInstance.post("/api/v1/clients", formData, {
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "multipart/form-data",
       },
     });
 
     if (response.status === 200) {
       console.log("✅ Client Created Successfully");
-      return true; // Return true on success
+      return true;
     } else {
       throw new Error(
         `Unexpected response status: ${response.status} - ${JSON.stringify(
@@ -514,12 +410,6 @@ export async function createClient(
       "❌ Error creating client:",
       error.response?.data || error.message
     );
-    if (
-      error.message?.includes("Token expired") ||
-      error.message?.includes("Access token is missing")
-    ) {
-      throw new Error("Authentication required. Redirecting to login...");
-    }
     throw new Error(
       `Failed to create client: ${
         error.response?.data?.message || error.message
@@ -529,38 +419,15 @@ export async function createClient(
 }
 
 export async function deleteClient(id: number): Promise<boolean> {
-  let token = getAccessToken();
-  console.log("🔹 Initial Access Token for Delete Client:", token);
-
   try {
-    token = await refreshTokenIfNeeded(token);
-    const response = await axiosInstance.delete(`/api/v1/clients/${id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (response.status !== 204) {
-      throw new Error(
-        `Unexpected response status: ${response.status} - ${JSON.stringify(
-          response.data
-        )}`
-      );
-    }
-
+    const response = await axiosInstance.delete(`/api/v1/clients/${id}`);
     console.log("✅ Client Deleted Successfully");
-    return true;
+    return response.status === 204;
   } catch (error: any) {
     console.error(
       `Error deleting client (ID: ${id}):`,
       error.response?.data || error.message
     );
-    if (
-      error.message?.includes("Token expired") ||
-      error.message?.includes("Access token is missing")
-    ) {
-      throw new Error("Authentication required. Redirecting to login...");
-    }
     throw new Error(
       `Failed to delete client: ${
         error.response?.data?.message || error.message

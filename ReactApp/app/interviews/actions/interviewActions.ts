@@ -2,42 +2,6 @@ import { Interview } from "@/app/types/interviews/interview";
 import { InterviewDetail } from "@/app/types/interviews/interviewDetail";
 import { InterviewList } from "@/app/types/interviews/interviewList";
 import axiosInstance from "@/app/utils/axiosInstance";
-import { jwtDecode } from "jwt-decode";
-
-// Function to get the access token from localStorage or MSAL
-const getAccessToken = (): string => {
-  const token = localStorage.getItem("accessToken");
-  if (!token) {
-    console.warn(
-      "🔸 Access token not found in localStorage. Attempting to rehydrate from MSAL..."
-    );
-    const msalToken =
-      localStorage.getItem("msal.idtoken") ||
-      localStorage.getItem("msal.accesstoken");
-    if (msalToken) {
-      localStorage.setItem("accessToken", msalToken);
-      return msalToken;
-    }
-    throw new Error("Access token is missing. Please log in again.");
-  }
-  return token;
-};
-
-// Helper function to refresh token if expired
-const refreshTokenIfNeeded = async (token: string): Promise<string> => {
-  try {
-    const decoded: any = jwtDecode(token);
-    const currentTime = Math.floor(Date.now() / 1000);
-    if (decoded.exp && decoded.exp < currentTime) {
-      console.log("🔸 Token expired, attempting refresh...");
-      throw new Error("Token expired. Please log in again.");
-    }
-    return token;
-  } catch (error) {
-    console.error("Error decoding or refreshing token:", error);
-    throw new Error("Token invalid or expired. Please log in again.");
-  }
-};
 
 // Helper function to normalize interview data for backend
 const normalizeInterviewData = (interview: InterviewDetail): Interview => {
@@ -71,16 +35,8 @@ const normalizeInterviewData = (interview: InterviewDetail): Interview => {
 };
 
 export async function fetchInterviews(): Promise<InterviewList[]> {
-  let token = getAccessToken();
-  console.log("🔹 Initial Access Token:", token);
-
   try {
-    token = await refreshTokenIfNeeded(token);
-    const response = await axiosInstance.get("/api/v1/interviews", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const response = await axiosInstance.get("/api/v1/interviews");
 
     let interviews: any[] = [];
     if (Array.isArray(response.data)) {
@@ -148,35 +104,24 @@ export async function fetchInterviews(): Promise<InterviewList[]> {
     return mappedInterviews;
   } catch (error: any) {
     console.error("Error fetching interviews:", error);
-    if (
-      error.message?.includes("Token expired") ||
-      error.message?.includes("Access token is missing")
-    ) {
-      throw new Error("Authentication required. Redirecting to login...");
-    }
-    return []; // Return empty array to prevent crash, ensuring valid structure
+    throw new Error(
+      `Failed to fetch interviews: ${
+        error.response?.data?.message || error.message
+      }`
+    );
   }
 }
 
 export async function getInterview(
   id: number
 ): Promise<InterviewDetail | null> {
-  let token = getAccessToken();
-  console.log("🔹 Initial Access Token for Interview Fetch:", token);
-
   try {
-    token = await refreshTokenIfNeeded(token);
-    const response = await axiosInstance.get(`/api/v1/interviews/${id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
+    const response = await axiosInstance.get(`/api/v1/interviews/${id}`);
     const interviewData = response.data;
     console.log("🔹 Raw Interview Data:", interviewData);
 
     return {
-      InterviewID: interviewData.InterviewID || interviewData.interviewID, // Handle both "InterviewID" and "interviewID"
+      InterviewID: interviewData.InterviewID || interviewData.interviewID,
       InterviewEntryDate:
         interviewData.InterviewEntryDate || interviewData.interviewEntryDate
           ? new Date(
@@ -241,33 +186,24 @@ export async function getInterview(
     };
   } catch (error: any) {
     console.error("Error fetching interview:", error);
-    if (
-      error.message?.includes("Token expired") ||
-      error.message?.includes("Access token is missing")
-    ) {
-      throw new Error("Authentication required. Redirecting to login...");
-    }
-    return null; // Return null to prevent crash
+    throw new Error(
+      `Failed to fetch interview: ${
+        error.response?.data?.message || error.message
+      }`
+    );
   }
 }
 
 export async function createInterview(
   interviewData: InterviewDetail
 ): Promise<boolean> {
-  let token = getAccessToken();
-  console.log("🔹 Initial Access Token for Create Interview:", token);
-
   try {
-    token = await refreshTokenIfNeeded(token);
-
     const normalizedData = normalizeInterviewData(interviewData);
-
     const response = await axiosInstance.post(
       "/api/v1/interviews",
       normalizedData,
       {
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       }
@@ -288,12 +224,6 @@ export async function createInterview(
       "Error creating interview:",
       error.response?.data || error.message
     );
-    if (
-      error.message?.includes("Token expired") ||
-      error.message?.includes("Access token is missing")
-    ) {
-      throw new Error("Authentication required. Redirecting to login...");
-    }
     throw new Error(
       `Failed to create interview: ${
         error.response?.data?.message || error.message
@@ -306,20 +236,13 @@ export async function updateInterview(
   id: number,
   interviewData: InterviewDetail
 ): Promise<boolean> {
-  let token = getAccessToken();
-  console.log("🔹 Initial Access Token for Update Interview:", token);
-
   try {
-    token = await refreshTokenIfNeeded(token);
-
     const normalizedData = normalizeInterviewData(interviewData);
-
     const response = await axiosInstance.put(
       `/api/v1/interviews/${id}`,
       normalizedData,
       {
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       }
@@ -340,12 +263,6 @@ export async function updateInterview(
       `Error updating interview (ID: ${id}):`,
       error.response?.data || error.message
     );
-    if (
-      error.message?.includes("Token expired") ||
-      error.message?.includes("Access token is missing")
-    ) {
-      throw new Error("Authentication required. Redirecting to login...");
-    }
     throw new Error(
       `Failed to update interview: ${
         error.response?.data?.message || error.message
@@ -355,17 +272,8 @@ export async function updateInterview(
 }
 
 export async function deleteInterview(id: number): Promise<boolean> {
-  let token = getAccessToken();
-  console.log("🔹 Initial Access Token for Delete Interview:", token);
-
   try {
-    token = await refreshTokenIfNeeded(token);
-    const response = await axiosInstance.delete(`/api/v1/interviews/${id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
+    const response = await axiosInstance.delete(`/api/v1/interviews/${id}`);
     if (response.status === 204) {
       console.log("✅ Interview deleted successfully");
       return true;
@@ -381,12 +289,6 @@ export async function deleteInterview(id: number): Promise<boolean> {
       `Error deleting interview (ID: ${id}):`,
       error.response?.data || error.message
     );
-    if (
-      error.message?.includes("Token expired") ||
-      error.message?.includes("Access token is missing")
-    ) {
-      throw new Error("Authentication required. Redirecting to login...");
-    }
     throw new Error(
       `Failed to delete interview: ${
         error.response?.data?.message || error.message
